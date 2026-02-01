@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Case Study — matplotlib__matplotlib-23476 — IssueExec</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+</head>
+
+<body>
+  <main class="container">
+    <header class="hero">
+      <div class="badge">Illustrative Case Study (Good Case)</div>
+      <h1>matplotlib__matplotlib-23476</h1>
+      <p class="subtitle">
+        DPI doubles after unpickling on M1 Mac — trace funnels localization into pickle/unpickle magic methods,
+        enabling reranking to prioritize the correct serialization boundary.
+      </p>
+      <p><a href="./index.html">← Back to Case Studies</a> &nbsp; | &nbsp; <a href="../index.html">Homepage</a></p>
+    </header>
+
+    <section class="card">
+      <h2>Outcome</h2>
+      <p class="note">
+        ✅ <strong>Hit @1 (GT function)</strong> — <code>lib/matplotlib/figure.py:Figure.__getstate__</code><br/>
+        Core idea: the selected test does not assert DPI directly, but its execution trace exposes a must-pass serialization skeleton
+        (<code>__getstate__</code> / <code>__setstate__</code>), enabling accurate function-level reranking.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>0) Metadata (Repro Anchors)</h2>
+      <ul>
+        <li><strong>Dataset:</strong> SWE-bench-Lite</li>
+        <li><strong>Instance ID:</strong> <code>matplotlib__matplotlib-23476</code></li>
+        <li><strong>Repository:</strong> <code>matplotlib/matplotlib</code></li>
+        <li><strong>Base commit:</strong> <code>33a0599711d26dc2b79f851c6daed4947df7c167</code></li>
+        <li><strong>Issue (text reference):</strong> <code>https://github.com/matplotlib/matplotlib/issues/23471</code></li>
+        <li><strong>Ground Truth:</strong>
+          <ul>
+            <li>✅ GT edit location: <code>lib/matplotlib/figure.py:Figure.__getstate__</code></li>
+            <li>Neighbor: <code>lib/matplotlib/figure.py:Figure.__setstate__</code></li>
+            <li>✅ GT test: <code>lib/matplotlib/tests/test_pickle.py::test_unpickle_canvas</code></li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>1) Input</h2>
+      <p>
+        <strong>Symptom.</strong> On M1 MacBooks, repeatedly pickling/unpickling a Matplotlib figure causes its DPI to
+        <strong>double</strong> each time (<code>200 → 400 → 800 → …</code>), eventually triggering an <code>OverflowError</code>.
+      </p>
+
+      <details>
+        <summary><strong>Issue excerpt (original, abridged)</strong></summary>
+        <p>
+          The issue reports: “When a figure is unpickled, its dpi is doubled… if done in a loop it can cause an OverflowError.”
+          The reproduction script repeatedly <code>pickle.dump</code>/<code>pickle.load</code> a figure and prints the DPI, showing exponential growth.
+          The crash stack points to figure unpickling and backend manager creation on MacOSX.
+        </p>
+        <pre><code>[Bug]: DPI of a figure is doubled after unpickling on M1 Mac
+...
+0: 200.0
+1: 400.0
+2: 800.0
+...
+OverflowError: signed integer is greater than maximum
+</code></pre>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>2) Step 1 — Relevant Test Retrieval (Two-Phase)</h2>
+      <p>
+        IssueExec localizes via <strong>issue → tests → traces → code</strong>.
+        BM25 prioritizes recall; the LLM then selects a small, high-quality set <code>T<sub>d</sub></code>.
+      </p>
+
+      <details>
+        <summary><strong>BM25 Top-10 (lexical filtering)</strong></summary>
+        <pre><code>lib/matplotlib/tests/test_axes.py::test_vert_violinplot_custompoints_200
+lib/matplotlib/tests/test_axes.py::test_horiz_violinplot_custompoints_200
+lib/matplotlib/tests/test_arrow_patches.py::test_fancyarrow_dpi_cor_200dpi
+lib/matplotlib/tests/test_figure.py::test_change_dpi
+lib/matplotlib/tests/test_figure.py::test_subfigure_dpi
+lib/matplotlib/tests/test_figure.py::test_set_fig_size
+lib/matplotlib/tests/test_pickle.py::test_unpickle_canvas
+lib/matplotlib/tests/test_figure.py::TestSubplotMosaic::test_user_order
+lib/matplotlib/tests/test_figure.py::TestSubplotMosaic::test_nested_user_order
+lib/matplotlib/tests/test_png.py::test_truncated_file</code></pre>
+        <p class="note">
+          Observation: BM25 retrieves many “dpi/figure” tests; the serialization-specific signal becomes decisive in semantic selection.
+        </p>
+      </details>
+
+      <details>
+        <summary><strong>LLM-selected T<sub>d</sub> (semantic selection)</strong></summary>
+        <pre><code>lib/matplotlib/tests/test_pickle.py::test_unpickle_canvas
+lib/matplotlib/tests/test_figure.py::test_change_dpi
+lib/matplotlib/tests/test_figure.py::test_subfigure_dpi
+lib/matplotlib/tests/test_pickle.py::test_simple
+lib/matplotlib/tests/test_pickle.py::test_complete</code></pre>
+      </details>
+
+      <p class="note">
+        Why this intermediate layer matters: the issue mentions DPI, but the mechanism is tied to
+        <strong>pickle/unpickle state transitions</strong>. Test retrieval anchors the search to executable serialization behavior,
+        preventing drift toward speculative backend-only hypotheses.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>3) Step 2 — Trace-Guided Analysis (Execution Causal Skeleton)</h2>
+
+      <p><strong>Key retrieved test (GT test).</strong></p>
+      <pre><code>def test_unpickle_canvas():
+    fig = mfigure.Figure()
+    assert fig.canvas is not None
+    out = BytesIO()
+    pickle.dump(fig, out)
+    out.seek(0)
+    fig2 = pickle.load(out)
+    assert fig2.canvas is not None</code></pre>
+
+      <p class="note">
+        Blind spot: this test checks <code>canvas</code> restoration, not DPI directly.
+        Value: the trace still exposes must-pass pickle/unpickle boundaries (<code>__getstate__</code>/<code>__setstate__</code>).
+      </p>
+
+      <details>
+        <summary><strong>Coverage / call graph (test → callees)</strong></summary>
+        <pre><code>lib/matplotlib/tests/test_pickle.py::test_unpickle_canvas →
+  • lib/matplotlib/_api/deprecation.py::wrapper
+  • lib/matplotlib/artist.py::Rectangle.__getstate__
+  • lib/matplotlib/cbook/__init__.py::CallbackRegistry.__getstate__
+  • lib/matplotlib/cbook/__init__.py::CallbackRegistry.__setstate__
+  • lib/matplotlib/figure.py::Figure.__getstate__
+  • lib/matplotlib/figure.py::Figure.__setstate__
+  • lib/matplotlib/transforms.py::Affine2D.__getstate__
+  • lib/matplotlib/transforms.py::Affine2D.__setstate__
+  • lib/matplotlib/transforms.py::Bbox.__getstate__
+  • lib/matplotlib/transforms.py::Bbox.__setstate__
+  • lib/matplotlib/transforms.py::BboxTransformTo.__getstate__
+  • lib/matplotlib/transforms.py::BboxTransformTo.__setstate__
+  • lib/matplotlib/transforms.py::TransformedBbox.__getstate__
+  • lib/matplotlib/transforms.py::TransformedBbox.__setstate__</code></pre>
+      </details>
+
+      <p>
+        <strong>Suspicious locations (trace-guided).</strong>
+        High/Critical candidates include <code>Figure.__getstate__</code> and <code>Figure.__setstate__</code>, which are guaranteed to be on the unpickle path.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>4) Step 3 — Contextual Refinement</h2>
+      <p>
+        IssueExec retrieves module structure and surrounding code context for files containing suspicious locations
+        (here, primarily <code>lib/matplotlib/figure.py</code>). This enables reranking to distinguish
+        <strong>root cause boundaries</strong> (state capture) from <strong>symptom-adjacent neighbors</strong> (state restore and backend interactions).
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>5) Step 4 — Final Reranking (Ranked Edit Locations)</h2>
+
+      <details>
+        <summary><strong>Candidate contexts (abridged)</strong></summary>
+
+        <p><strong>Location 1 (GT): <code>Figure.__getstate__</code></strong></p>
+        <pre><code>def __getstate__(self):
+    state = super().__getstate__()
+
+    # The canvas cannot currently be pickled...
+    state.pop("canvas")
+
+    # Set cached renderer to None -- it can't be pickled.
+    state["_cachedRenderer"] = None
+
+    state['__mpl_version__'] = mpl.__version__
+
+    from matplotlib import _pylab_helpers
+    if self.canvas.manager in _pylab_helpers.Gcf.figs.values():
+        state['_restore_to_pylab'] = True
+    return state</code></pre>
+
+        <p><strong>Location 2 (neighbor): <code>Figure.__setstate__</code></strong></p>
+        <pre><code>def __setstate__(self, state):
+    version = state.pop('__mpl_version__')
+    restore_to_pylab = state.pop('_restore_to_pylab', False)
+
+    if version != mpl.__version__:
+        _api.warn_external(...)
+
+    self.__dict__ = state
+
+    FigureCanvasBase(self)  # Set self.canvas.
+
+    if restore_to_pylab:
+        import matplotlib.pyplot as plt
+        import matplotlib._pylab_helpers as pylab_helpers
+        ...
+        plt.draw_if_interactive()
+
+    self.stale = True</code></pre>
+      </details>
+
+      <p><strong>Final ranked edit locations <code>L*</code> (Top-k).</strong></p>
+      <ol>
+        <li>✅ <code>lib/matplotlib/figure.py:Figure.__getstate__</code> (GT)</li>
+        <li><code>lib/matplotlib/figure.py:Figure.__setstate__</code></li>
+      </ol>
+
+      <p class="note">
+        Rationale: although the stacktrace points to <code>__setstate__</code>, repeated DPI doubling suggests a
+        <strong>state capture / serialization mismatch</strong> that compounds each pickle cycle.
+        Reranking therefore prioritizes the serialization boundary <code>__getstate__</code>.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>6) Baseline (SWE-agent) — Failure Summary</h2>
+      <ul>
+        <li><strong>Early lock-in:</strong> assumes “MacOSX backend scaling bug” because <code>__setstate__</code> touches backend manager creation.</li>
+        <li><strong>Single-direction debugging:</strong> instruments <code>backend_macosx.py</code> (<code>resize</code>, logs, arm64 branches) without checking the serialization closed loop.</li>
+        <li><strong>Workaround drift:</strong> introduces a new <code>rcParam</code> (<code>macosx.dpi_scaling</code>) + config registration + docs (mitigation rather than root-cause fix).</li>
+        <li><strong>Missed root cause:</strong> does not investigate whether <code>__getstate__</code> omits or misrepresents DPI/device scaling related state.</li>
+      </ul>
+      <p class="note">
+        Key contrast: IssueExec uses existing tests and traces to constrain candidates to must-pass serialization methods,
+        preventing speculative backend fixation.
+      </p>
+    </section>
+
+
+    <section class="card">
+      <h2>7) Step 5 — Patch Generation</h2>
+      <p>
+        To connect localization improvements to end-to-end repair (RQ2), we feed IssueExec’s function-level edit locations into the downstream Agentless repair module.
+        Rather than providing entire files, the repair stage operates on a pinpointed function-level target
+        with minimal surrounding context required for editing.
+      </p>
+
+      <p class="note">
+        Why this fixes “DPI doubles after unpickling”: on high-DPI backends, the figure’s runtime DPI may be temporarily
+        scaled by device pixel ratio while the logical/original DPI is preserved in <code>_original_dpi</code>. If the scaled DPI
+        is serialized, repeated pickle/unpickle will compound the scaling. The patch therefore corrects the serialization boundary
+        in <code>__getstate__</code> by restoring the logical DPI in the pickled state and removing <code>_original_dpi</code>.
+      </p>
+
+      <details>
+        <summary><strong>Resolved patch</strong></summary>
+        <pre><code>diff --git a/lib/matplotlib/figure.py b/lib/matplotlib/figure.py
+--- a/lib/matplotlib/figure.py
++++ b/lib/matplotlib/figure.py
+@@ -3023,6 +3023,15 @@ def __getstate__(self):
+         # Set cached renderer to None -- it can't be pickled.
+         state["_cachedRenderer"] = None
+
++        # High-DPI backends may temporarily scale the figure dpi by the device
++        # pixel ratio, keeping the logical/original dpi in _original_dpi.
++        # Do not pickle the scaled dpi (otherwise it will be scaled again on
++        # unpickle). Also drop _original_dpi from the pickled state.
++        _orig_dpi = state.pop("_original_dpi", None)
++        if _orig_dpi is not None:
++            state["_dpi"] = _orig_dpi
++
+         # add version information to the state
+         state['__mpl_version__'] = mpl.__version__</code></pre>
+      </details>
+
+      <p class="note">
+        Outcome: this patch resolves the instance under the SWE-bench Lite evaluation setup. This supports our RQ2 claim:
+        by pinpointing exact edit locations rather than providing entire files, the repair stage avoids being overwhelmed
+        by extraneous code and focuses on the root-cause boundary.
+      </p>
+    </section>
+
+
+
+    <section class="card">
+      <h2>8) Takeaway</h2>
+      <p>
+        This is a “trace-funneling” win: even when the retrieved test does not assert DPI, its execution trace exposes
+        the correct low-entropy search space (serialization magic methods), enabling accurate function-level localization.
+      </p>
+    </section>
+
+    <footer class="footer">
+      <p>© Anonymous submission — artifact homepage for review only.</p>
+    </footer>
+  </main>
+</body>
+</html>

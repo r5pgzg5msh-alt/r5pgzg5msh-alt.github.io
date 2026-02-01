@@ -1,0 +1,84 @@
+IssueExec Prompt Notes — trace_analysis_prompt.txt
+==================================================
+
+Stage
+-----
+Online Stage 2 (Trace-Guided Analysis).
+
+This file contains TWO prompts:
+1) analyze_blind_spots_prompt
+2) localize_suspicious_locations_prompt
+
+Prompt 1: analyze_blind_spots_prompt
+------------------------------------
+Goal:
+- Explain why related tests can pass despite the bug (false negatives).
+- Infer missing requirement/assumption.
+- Provide actionable hints for where production logic is wrong and how the error propagates.
+
+Inputs:
+{problem_statement}
+- Issue description.
+
+{test_functions}
+- Related tests and (optionally) their coverage summary.
+
+Output schema (STRICT):
+- BLIND_SPOTS_ANALYSIS:
+  - false_negative_mechanism: assertion_deviation / data_assumption_defect / logic_assumption_error
+  - root_cause_hypothesis: likely_root_cause_behavior / likely_missing_requirement / propagation_summary
+  - systematic_risk_areas: symmetric_operation_risk / shared_component_risk / similar_logic_risk
+  - modification_priority: ranked list
+
+Operational guidance:
+- Focus on production code, not on modifying tests.
+- Prefer describing concrete missing assertion gaps and trigger-condition mismatches.
+
+Prompt 2: localize_suspicious_locations_prompt
+----------------------------------------------
+Goal:
+- Map blind-spot mechanisms onto concrete production code locations.
+- Produce a ranked suspicious set, and explicitly handle coverage limitations.
+
+Inputs:
+{problem_statement}
+{blind_spots_analysis}
+{test_coverage_locations}
+- A list of code entities covered by executing Td tests (file_path::identifier).
+  May include functions/methods/classes.
+
+CRITICAL CONSTRAINT:
+- You MUST ONLY reference entities appearing in {test_coverage_locations}.
+- If the issue suggests code outside coverage, output:
+  NOT_IN_COVERAGE: ...
+  and explain the limitation.
+
+Output schema (STRICT):
+- FALSE_NEGATIVE_CODE_MAPPING:
+  - direct_false_negative_sources
+  - assumption_propagation_risks
+  - systematic_risk_areas
+  - modification_priority_ranking (CRITICAL/HIGH/MEDIUM)
+  - mapping_reasoning
+
+Common failure modes & mitigations
+----------------------------------
+A) Hallucinating uncovered locations
+- Mitigation: enforce post-check: every mentioned identifier must appear in coverage list;
+  otherwise reject and retry with stronger constraint reminder.
+
+B) Coverage list too large for context
+- Mitigation: prune traces before building coverage list:
+  - BFS depth limit (e.g., keep shallow call layers)
+  - prioritize nodes related to issue keywords or test module
+  - deduplicate utility functions
+
+C) Too infrastructure-heavy suspicious set
+- Mitigation: provide minimal module skeleton/context later (refinement stage),
+  and rely on reranking to prioritize root-cause candidates.
+
+Recommended validation
+----------------------
+- Ensure every referenced location exists verbatim in test_coverage_locations (string match).
+- Ensure required sections exist in output schema.
+- Ensure output is within a single triple-backtick fenced block.

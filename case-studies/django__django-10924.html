@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Case Study — django__django-10924 (Bad Case) — IssueExec</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+
+  <!-- Page-local wrapping fixes for long lines inside <pre><code> -->
+  <style>
+    pre {
+      white-space: pre-wrap;       /* preserve newlines but allow wrapping */
+      overflow-wrap: anywhere;     /* wrap long tokens/paths */
+      word-break: break-word;      /* fallback */
+    }
+    code {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <header class="hero">
+      <div class="badge">Illustrative Case Study (Bad Case)</div>
+      <h1>django__django-10924 — Callable path for FilePathField</h1>
+      <p class="subtitle">
+        A failure case where the ground-truth edit location is not covered by the retrieved tests’ execution traces.
+      </p>
+      <p>
+        <a href="../index.html">← Back to Homepage</a>
+        &nbsp;·&nbsp;
+        <a href="./index.html">← Back to Case Studies</a>
+      </p>
+    </header>
+
+    <!-- Outcome card -->
+    <section class="card">
+      <h2>Outcome</h2>
+
+      <div class="grid">
+        <div class="item" style="cursor: default;">
+          <div class="item-title">❌ Missed GT location due to coverage gap</div>
+          <div class="item-desc">
+            IssueExec’s trace-guided localization could not reach the ground-truth edit location
+            (<code>FilePathField.formfield</code>) because it was not executed by the selected tests (<code>T<sub>d</sub></code>).
+          </div>
+        </div>
+      </div>
+
+      <p class="note">
+        Failure type: <strong>Coverage Gap</strong> (GT location not in <code>Cov(T<sub>d</sub>)</code>).
+      </p>
+    </section>
+
+    <!-- Basic info -->
+    <section class="card">
+      <h2>Basic Information</h2>
+      <ul>
+        <li><strong>Dataset:</strong> SWE-bench Lite</li>
+        <li><strong>Base commit:</strong> <code>bceadd2788dc2dad53eba0caae172bd8522fd483</code></li>
+        <li><strong>Instance ID:</strong> <code>django__django-10924</code></li>
+        <li><strong>Issue link:</strong> <a href="https://code.djangoproject.com/ticket/29529">https://code.djangoproject.com/ticket/29529</a></li>
+      </ul>
+
+      <details>
+        <summary><strong>Ground-truth (GT)</strong></summary>
+        <ul>
+          <li><strong>GT edit location:</strong> <code>django/db/models/fields/__init__.py:FilePathField.formfield</code></li>
+          <li class="note">
+            Note: In this case, the selected tests did not execute <code>FilePathField.formfield</code>, so trace-guided localization
+            could not include it in the suspicious set.
+          </li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- Issue description -->
+    <section class="card">
+      <h2>Issue</h2>
+
+      <details open>
+        <summary><strong>Original issue description</strong></summary>
+        <pre><code>Allow FilePathField path to accept a callable.
+Description
+
+I have a special case where I want to create a model containing the path to some local files on the server/dev machine. Seeing as the place where these files are stored is different on different machines I have the following:
+import os
+from django.conf import settings
+from django.db import models
+class LocalFiles(models.Model):
+    name = models.CharField(max_length=255)
+    file = models.FilePathField(path=os.path.join(settings.LOCAL_FILE_DIR, 'example_dir'))
+Now when running manage.py makemigrations it will resolve the path based on the machine it is being run on. Eg: /home/&lt;username&gt;/server_files/example_dir
+I had to manually change the migration to include the os.path.join() part to not break this when running the migration on production/other machine.</code></pre>
+      </details>
+    </section>
+
+    <!-- Retrieval -->
+    <section class="card">
+      <h2>Stage 1 — Relevant Test Retrieval</h2>
+
+      <details>
+        <summary><strong>BM25 Top-10</strong></summary>
+        <pre><code>tests/model_fields/test_promises.py::PromiseTest::test_FilePathField
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_recursive_no_folders_or_files
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_recursive_folders_without_files
+tests/utils_tests/test_autoreload.py::TestIterModulesAndFiles::test_paths_are_pathlib_instances
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_fix_os_paths
+tests/test_runner/test_discover_runner.py::DiscoverRunnerTests::test_file_path
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_allow_folders
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_clean
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_match
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_recursive</code></pre>
+      </details>
+
+      <details open>
+        <summary><strong>Selected <code>T<sub>d</sub></code> (LLM)</strong></summary>
+        <pre><code>tests/model_fields/test_promises.py::PromiseTest::test_FilePathField
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_recursive_no_folders_or_files
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_recursive_folders_without_files
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_fix_os_paths
+tests/forms_tests/field_tests/test_filepathfield.py::FilePathFieldTest::test_allow_folders</code></pre>
+      </details>
+
+      <p class="note">
+        These tests are semantically related to <code>FilePathField</code>. However, they do not exercise the GT edit location
+        <code>FilePathField.formfield</code> in the observed trace coverage.
+      </p>
+    </section>
+
+    <!-- Trace-guided analysis -->
+    <section class="card">
+      <h2>Stage 2 — Trace-Guided Analysis</h2>
+
+      <details>
+        <summary><strong>Example test snippet + partial coverage excerpt</strong></summary>
+        <pre><code>Test: tests/model_fields/test_promises.py::PromiseTest::test_FilePathField
+
+def test_FilePathField(self):
+    lazy_func = lazy(lambda: 'tests.py', str)
+    self.assertIsInstance(FilePathField().get_prep_value(lazy_func()), str)
+    lazy_func = lazy(lambda: 0, int)
+    self.assertIsInstance(FilePathField().get_prep_value(lazy_func()), str)
+
+Coverage excerpt:
+- django/db/models/fields/__init__.py::FilePathField.__init__
+- django/db/models/fields/__init__.py::FilePathField.get_prep_value
+(...)</code></pre>
+      </details>
+
+      <details open>
+        <summary><strong>Trace-guided suspicious mapping (summary)</strong></summary>
+        <pre><code>Key suspicious locations (from covered traces):
+- django/db/models/fields/__init__.py::FilePathField.__init__
+- django/db/models/fields/__init__.py::FilePathField.get_prep_value
+- django/forms/fields.py::FilePathField (init/choices-related logic)
+
+Coverage limitation:
+- NOT_IN_COVERAGE: GT edit location `django/db/models/fields/__init__.py:FilePathField.formfield` is not executed by selected tests, so it cannot be proposed by trace-constrained localization.</code></pre>
+      </details>
+    </section>
+
+    <!-- Refinement + Rerank -->
+    <section class="card">
+      <h2>Stage 3–4 — Contextual Refinement & Code-Aware Reranking</h2>
+
+      <p>
+        <strong>Contextual refinement</strong> expands the candidate set by retrieving structurally related context
+        (e.g., the containing class/module) for suspicious locations discovered from traces. This helps the reranker
+        see the full API surface and nearby logic even when the trace stage only pinpoints coarse-grained entities.
+      </p>
+
+      <details>
+        <summary><strong>Contextual refinement (module/class context retrieved)</strong></summary>
+        <pre><code>django/forms/fields.py::FilePathField
+django/db/models/fields/__init__.py::FilePathField</code></pre>
+      </details>
+
+      <details open>
+        <summary><strong>Final reranked edit locations (<code>L*</code>)</strong></summary>
+        <pre><code>(1) django/db/models/fields/__init__.py::FilePathField
+(2) django/forms/fields.py::FilePathField</code></pre>
+      </details>
+
+      <p class="note">
+        Although these are plausible “surface” candidates for callable path handling,
+        the GT method <code>FilePathField.formfield</code> is not included because it is not covered by
+        the selected tests’ execution traces in this case.
+      </p>
+    </section>
+
+    <!-- Baseline -->
+    <section class="card">
+      <h2>Baseline (SWE-agent) — Failure/Success Summary</h2>
+
+      <p>
+        In contrast, SWE-agent reached the GT location by using <strong>content-based search</strong> in the repository
+        (rather than relying on trace coverage).
+      </p>
+
+      <details open>
+        <summary><strong>Compact bullet summary</strong></summary>
+        <ul>
+          <li><strong>File-name hypothesis failed:</strong> searched for <code>FilePathField.py</code> (no match), then broadened to <code>fields.py</code>.</li>
+          <li><strong>Key pivot:</strong> searched the codebase for <code>class FilePathField</code> and found
+            <code>django/db/models/fields/__init__.py</code>.</li>
+          <li><strong>Precise navigation:</strong> jumped to the class definition and inspected methods.</li>
+          <li><strong>Located GT:</strong> identified and edited <code>FilePathField.formfield</code> (the ground-truth edit location).</li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- Takeaway -->
+    <section class="card">
+      <h2>Takeaway</h2>
+      <p>
+        This case highlights a key limitation of trace-guided localization: if the retrieved tests do not execute
+        the true edit location, the GT cannot appear in the suspicious set. This failure mode aligns with our
+        discussion of limitations related to <strong>incomplete coverage</strong>.
+      </p>
+    </section>
+
+    <footer class="footer">
+      <p>© Anonymous submission — artifact homepage for review only.</p>
+    </footer>
+  </main>
+</body>
+</html>

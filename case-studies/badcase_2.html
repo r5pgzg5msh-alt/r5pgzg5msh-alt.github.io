@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Case Study — Bad Case #2 (Placeholder) — IssueExec</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+</head>
+
+<body>
+  <main class="container">
+    <header class="hero">
+      <div class="badge">Illustrative Case Study (Bad Case)</div>
+      <h1>Bad Case #2 (Placeholder)</h1>
+      <p class="subtitle">
+        Replace this page with a failure case where IssueExec is misled by trace noise or infrastructure dominance.
+        Recommended: “trace noise / infra-heavy execution overwhelms signal”, or “reranking confusion”.
+      </p>
+      <p><a href="./index.html">← Back to Case Studies</a> &nbsp; | &nbsp; <a href="../index.html">Homepage</a></p>
+    </header>
+
+    <section class="card">
+      <h2>Outcome</h2>
+      <p class="note">
+        ❌ <strong>Localization failure</strong> — IssueExec produces plausible but incorrect suspicious locations due to noisy traces or misleading context.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>0) Metadata (Fill in)</h2>
+      <ul>
+        <li><strong>Dataset:</strong> SWE-bench-Lite</li>
+        <li><strong>Instance ID:</strong> <code>TODO</code></li>
+        <li><strong>Repository:</strong> <code>TODO</code></li>
+        <li><strong>Base commit:</strong> <code>TODO</code></li>
+        <li><strong>Issue:</strong> <code>TODO</code></li>
+        <li><strong>Ground Truth:</strong> <code>TODO</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>1) Failure Mode (Recommended: Trace Noise / Infra Dominance)</h2>
+      <ul>
+        <li><strong>What happened:</strong> the retrieved tests execute broad infrastructure code; suspicious set is dominated by generic utilities.</li>
+        <li><strong>Why it matters:</strong> even within <code>Cov(Td)</code>, causal signal can be diluted when traces are wide and shallow.</li>
+        <li><strong>Evidence to include:</strong> show call graph layers and highlight how few issue-relevant nodes remain after pruning.</li>
+      </ul>
+
+      <details>
+        <summary><strong>Alternative failure mode: Reranking confusion</strong></summary>
+        <ul>
+          <li>Multiple candidates are semantically plausible; the reranker prioritizes a symptom location rather than the root cause.</li>
+          <li>Include top-k list and a short “why top-1 is wrong” analysis.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>2) Artifacts to Include (Checklist)</h2>
+      <div class="grid">
+        <div class="item" aria-label="Checklist item">
+          <div class="item-title">Issue excerpt</div>
+          <div class="item-desc">Abridged original description, emphasizing the key symptom.</div>
+        </div>
+        <div class="item" aria-label="Checklist item">
+          <div class="item-title">BM25 + Td</div>
+          <div class="item-desc">Show why retrieval looked reasonable but led to noisy traces.</div>
+        </div>
+        <div class="item" aria-label="Checklist item">
+          <div class="item-title">Trace graph snapshot (text)</div>
+          <div class="item-desc">Show infra-heavy nodes, pruning levels, and remaining candidates.</div>
+        </div>
+        <div class="item" aria-label="Checklist item">
+          <div class="item-title">Reranking outputs</div>
+          <div class="item-desc">Top-k candidates + brief root-cause vs symptom rationale.</div>
+        </div>
+      </div>
+
+      <details>
+        <summary><strong>Optional: mitigation discussion</strong></summary>
+        <ul>
+          <li>Stronger pruning heuristics or deeper trace reasoning for issue-specific paths.</li>
+          <li>Domain-token enhancement to bias toward project-specific entities.</li>
+          <li>Module-level refinement rather than full-file expansion to reduce noise.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>3) Baseline Comparison (Optional)</h2>
+      <p>
+        Summarize baseline behavior if available: does it fail similarly, or succeed by luck via lexical overlap?
+        Keep the comparison short and evidence-backed.
+      </p>
+    </section>
+
+    <footer class="footer">
+      <p>© Anonymous submission — artifact homepage for review only.</p>
+    </footer>
+  </main>
+</body>
+</html>

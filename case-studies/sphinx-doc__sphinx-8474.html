@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Case Study — sphinx-doc__sphinx-8474 (Bad Case) — IssueExec</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+
+  <!-- Page-local wrapping fixes for long lines inside <pre><code> -->
+  <style>
+    pre {
+      white-space: pre-wrap;       /* preserve newlines but allow wrapping */
+      overflow-wrap: anywhere;     /* wrap long tokens/paths */
+      word-break: break-word;      /* fallback */
+    }
+    code {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <header class="hero">
+      <div class="badge">Illustrative Case Study (Bad Case)</div>
+      <h1>sphinx-doc__sphinx-8474 — “no number is assigned for table” warnings</h1>
+      <p class="subtitle">
+        A failure case where the ground-truth edit location is covered by traces, but the call chain is too deep and the model fails to surface the GT location.
+      </p>
+      <p>
+        <a href="../index.html">← Back to Homepage</a>
+        &nbsp;·&nbsp;
+        <a href="./index.html">← Back to Case Studies</a>
+      </p>
+    </header>
+
+    <!-- Outcome card -->
+    <section class="card">
+      <h2>Outcome</h2>
+
+      <div class="grid">
+        <div class="item" style="cursor: default;">
+          <div class="item-title">❌ Missed GT location despite coverage</div>
+          <div class="item-desc">
+            The retrieved tests’ traces do cover the ground-truth edit location
+            (<code>StandardDomain._resolve_numref_xref</code>), but IssueExec did not surface it due to a deep and complex execution chain.
+          </div>
+        </div>
+      </div>
+
+      <p class="note">
+        Failure type: <strong>Deep Call Chain / Trace Complexity</strong> (GT ∈ <code>Cov(T<sub>d</sub>)</code>, but not recovered as <code>L*</code>).
+      </p>
+    </section>
+
+    <!-- Basic info -->
+    <section class="card">
+      <h2>Basic Information</h2>
+      <ul>
+        <li><strong>Dataset:</strong> SWE-bench Lite</li>
+        <li><strong>Base commit:</strong> <code>3ea1ec84cc610f7a9f4f6b354e264565254923ff</code></li>
+        <li><strong>Instance ID:</strong> <code>sphinx-doc__sphinx-8474</code></li>
+        <li><strong>Issue link:</strong> <a href="https://github.com/sphinx-doc/sphinx/issues/8360">https://github.com/sphinx-doc/sphinx/issues/8360</a></li>
+      </ul>
+
+      <details>
+        <summary><strong>Ground-truth (GT)</strong></summary>
+        <ul>
+          <li><strong>GT edit location:</strong> <code>sphinx/domains/std.py:StandardDomain._resolve_numref_xref</code></li>
+          <li class="note">
+            Note: Unlike a coverage-gap failure, this GT is executed by the selected tests. The failure here is that the model does not
+            correctly recover/surface the GT from a very deep trace chain.
+          </li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- Issue description -->
+    <section class="card">
+      <h2>Issue</h2>
+
+      <details open>
+        <summary><strong>Original issue description</strong></summary>
+        <pre><code>v3.3 upgrade started generating "WARNING: no number is assigned for table" warnings
+We've updated to Sphinx 3.3 in our documentation, and suddenly the following warning started popping up in our builds when we build either `singlehtml` or `latex`.:
+
+`WARNING: no number is assigned for table:`
+
+I looked through the changelog but it didn't seem like there was anything related to `numref` that was changed, but perhaps I missed something? Could anyone point me to a change in the numref logic so I can figure out where these warnings are coming from?</code></pre>
+      </details>
+    </section>
+
+    <!-- Retrieval -->
+    <section class="card">
+      <h2>Stage 1 — Relevant Test Retrieval</h2>
+
+      <details>
+        <summary><strong>BM25 Top-10</strong></summary>
+        <pre><code>tests/test_setup_command.py::test_build_sphinx_warning_return_zero_status
+tests/test_setup_command.py::test_build_sphinx_warning_is_error_return_nonzero_status
+tests/test_intl.py::test_text_warning_node
+tests/test_domain_std.py::test_glossary_warning
+tests/test_config.py::test_conf_warning_message
+tests/test_util_logging.py::test_info_and_warning
+tests/test_util_logging.py::test_once_warning_log
+tests/test_util_logging.py::test_is_suppressed_warning
+tests/test_util_logging.py::test_warning_location
+tests/test_intl.py::test_xml_warnings
+...
+tests/test_build_latex.py::test_numref (top-27)
+tests/test_build_latex.py::test_numref_with_prefix1
+tests/test_build_latex.py::test_numref_with_prefix2
+tests/test_build_latex.py::test_numref_with_language_ja
+tests/test_build_html.py::test_numfig_with_numbered_toctree_warn</code></pre>
+      </details>
+
+      <details open>
+        <summary><strong>Selected <code>T<sub>d</sub></code> (LLM)</strong></summary>
+        <pre><code>tests/test_build_latex.py::test_numref
+tests/test_build_latex.py::test_numref_with_prefix1
+tests/test_build_latex.py::test_numref_with_prefix2
+tests/test_build_latex.py::test_numref_with_language_ja
+tests/test_build_html.py::test_numfig_with_numbered_toctree_warn</code></pre>
+      </details>
+
+      <p class="note">
+        These tests are semantically aligned with <code>numref</code>/<code>numfig</code> and table numbering warnings, and their traces
+        include the relevant numbering/reference resolution pipeline.
+      </p>
+    </section>
+
+    <!-- Trace-guided analysis -->
+    <section class="card">
+      <h2>Stage 2 — Trace-Guided Analysis</h2>
+
+      <details>
+        <summary><strong>Representative test snippet (entry point)</strong></summary>
+        <pre><code>Test: tests/test_build_latex.py::test_numref
+
+def test_numref(app, status, warning):
+    app.builder.build_all()
+    result = (app.outdir / 'python.tex').read_text()
+    assert ('\\hyperref[\\detokenize{index:table-1}]'
+            '{Table \\ref{\\detokenize{index:table-1}}}') in result
+    ...</code></pre>
+      </details>
+
+      <details open>
+        <summary><strong>Trace observations + suspicious mapping (summary)</strong></summary>
+        <pre><code>Observed trace property:
+- The test triggers a long LaTeX build pipeline (builder → env → transforms → domains → writer).
+- The GT location is executed only after many indirections (deep call chain).
+
+Top suspicious locations surfaced by trace-guided mapping (high-level):
+- sphinx/builders/latex/__init__.py::LaTeXBuilder.write
+- sphinx/environment/collectors/toctree.py::TocTreeCollector.assign_figure_numbers
+- sphinx/environment/__init__.py::BuildEnvironment.resolve_references
+
+Failure mode:
+- Although the trace eventually reaches `sphinx/domains/std.py::StandardDomain._resolve_numref_xref`,
+  the chain is too deep/noisy for the model to correctly surface the GT as a final edit location.</code></pre>
+      </details>
+    </section>
+
+    <!-- Refinement + Rerank -->
+    <section class="card">
+      <h2>Stage 3–4 — Contextual Refinement & Code-Aware Reranking</h2>
+
+      <p>
+        <strong>Contextual refinement</strong> performs supplemental retrieval around suspicious locations (e.g., class/module context),
+        so the reranker can see the broader implementation surface beyond the raw trace nodes (which are often too granular or too many).
+      </p>
+
+      <details>
+        <summary><strong>Contextual refinement (module/class context retrieved)</strong></summary>
+        <pre><code>sphinx/environment/__init__.py::BuildEnvironment
+sphinx/builders/html/__init__.py::StandaloneHTMLBuilder
+sphinx/environment/collectors/toctree.py::TocTreeCollector
+sphinx/builders/latex/__init__.py::LaTeXBuilder</code></pre>
+      </details>
+
+      <details open>
+        <summary><strong>Final reranked edit locations (<code>L*</code>)</strong></summary>
+        <pre><code>(1) sphinx/environment/collectors/toctree.py::TocTreeCollector.assign_figure_numbers
+(2) sphinx/environment/__init__.py::BuildEnvironment.get_doctree
+(3) sphinx/environment/__init__.py::BuildEnvironment.resolve_references</code></pre>
+      </details>
+
+      <p class="note">
+        The reranked results are plausible upstream “pipeline” components, but still do not include the GT edit location
+        <code>StandardDomain._resolve_numref_xref</code>. This illustrates a limitation: when the root-cause hook sits deep in a long chain,
+        the trace-constrained reasoning can become dominated by higher-level orchestration nodes (builders/env), failing to surface the precise domain-level resolver.
+      </p>
+    </section>
+
+    <!-- Baseline note -->
+    <!-- <section class="card">
+      <h2>Baseline (SWE-agent)</h2>
+      <p class="note">
+        Baseline also fails on this instance, so we omit baseline details for this bad case.
+      </p>
+    </section> -->
+
+    <!-- Takeaway -->
+    <section class="card">
+      <h2>Takeaway</h2>
+      <p>
+        This case highlights a limitation different from coverage gaps: even if a correct edit location is executed by the selected tests,
+        a <strong>deep and complex call chain</strong> can prevent the model from surfacing the correct GT location as the final edit target.
+      </p>
+    </section>
+
+    <footer class="footer">
+      <p>© Anonymous submission — artifact homepage for review only.</p>
+    </footer>
+  </main>
+</body>
+</html>

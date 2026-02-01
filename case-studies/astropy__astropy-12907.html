@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Case Study — astropy__astropy-12907 — IssueExec</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+</head>
+
+<body>
+  <main class="container">
+    <header class="hero">
+      <div class="badge">Illustrative Case Study (Good Case)</div>
+      <h1>astropy__astropy-12907</h1>
+      <p class="subtitle">
+        <code>separability_matrix</code> incorrect for nested CompoundModels — test retrieval anchors the correct entry,
+        trace identifies the <code>&amp;</code> combiner, and reranking pinpoints <code>_cstack</code> as the GT edit location.
+      </p>
+      <p><a href="./index.html">← Back to Case Studies</a> &nbsp; | &nbsp; <a href="../index.html">Homepage</a></p>
+    </header>
+
+    <section class="card">
+      <h2>Outcome</h2>
+      <p class="note">
+        ✅ <strong>Hit @1 (GT function)</strong> — <code>astropy/modeling/separable.py::_cstack</code><br/>
+        Core idea: the erroneous “bottom-right 2×2 all-True” block matches the ndarray branch behavior in <code>_cstack</code>,
+        making symptom-level alignment decisive in reranking.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>0) Metadata (Repro Anchors)</h2>
+      <ul>
+        <li><strong>Dataset:</strong> SWE-bench-Lite</li>
+        <li><strong>Instance ID:</strong> <code>astropy__astropy-12907</code></li>
+        <li><strong>Repository:</strong> <code>astropy/astropy</code></li>
+        <li><strong>Base commit:</strong> <code>d16bfe05a744909de4b27f5875fe0d4ed41ce607</code></li>
+        <li><strong>Issue (text reference):</strong> <code>https://github.com/astropy/astropy/issues/12906</code></li>
+        <li><strong>Ground Truth:</strong>
+          <ul>
+            <li>✅ GT edit location: <code>astropy/modeling/separable.py::_cstack</code></li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>1) Input</h2>
+      <p>
+        <strong>Symptom.</strong> <code>astropy.modeling.separable.separability_matrix</code> behaves inconsistently on nested <code>CompoundModel</code>s:
+        flat composition preserves block-diagonal structure, while nested composition incorrectly makes two <code>Linear1D</code> models appear coupled.
+      </p>
+
+      <details>
+        <summary><strong>Issue excerpt (original, abridged)</strong></summary>
+        <pre><code>Modeling's separability_matrix does not compute separability correctly for nested CompoundModels
+
+cm = Linear1D(10) & Linear1D(5)
+separability_matrix(cm) -> diagonal (expected)
+
+separability_matrix(Pix2Sky_TAN() & Linear1D(10) & Linear1D(5)) -> expected block structure
+
+separability_matrix(Pix2Sky_TAN() & cm) -> bottom-right 2×2 becomes all True (unexpected)</code></pre>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>2) Step 1 — Relevant Test Retrieval (Two-Phase)</h2>
+      <p>
+        BM25 retrieves many unrelated tests due to cross-module noise; the relevant separability tests are not top-ranked.
+        The LLM then selects a coherent test set aligned with separability semantics.
+      </p>
+
+      <details>
+        <summary><strong>BM25 Top-10 (lexical filtering)</strong></summary>
+        <p class="note">
+          The relevant <code>test_separable</code> appears only around top-23 in this instance, indicating vocabulary mismatch / noise.
+        </p>
+        <pre><code>astropy/table/tests/test_masked.py::TestTableInit::test_mask_false_if_input_mask_not_true
+astropy/table/tests/test_masked.py::TestTableInit::test_mask_false_if_no_input_masked
+astropy/modeling/tests/test_models.py::test_custom_separability_matrix
+astropy/table/tests/test_table.py::Test__Astropy_Table__::test_simple_1
+astropy/table/tests/test_init_table.py::test_init_and_ref_from_dict
+astropy/modeling/tests/test_core.py::test_compound_model_with_bounding_box_true_and_single_output
+astropy/table/tests/test_init_table.py::test_init_and_ref_from_multidim_ndarray
+astropy/modeling/tests/test_core.py::test_model_with_bounding_box_true_and_single_output
+astropy/utils/tests/test_diff.py::test_diff_values_false
+astropy/io/votable/tests/table_test.py::TestVerifyOptions::test_pedantic_false
+...
+(astropy/modeling/tests/test_separable.py::test_separable ~ top-23)</code></pre>
+      </details>
+
+      <details>
+        <summary><strong>LLM-selected T<sub>d</sub> (semantic selection)</strong></summary>
+        <pre><code>astropy/modeling/tests/test_separable.py::test_separable
+astropy/modeling/tests/test_separable.py::test_custom_model_separable
+astropy/modeling/tests/test_separable.py::test_coord_matrix
+astropy/modeling/tests/test_separable.py::test_cdot
+astropy/modeling/tests/test_separable.py::test_cstack</code></pre>
+      </details>
+
+      <p class="note">
+        Why test retrieval matters: the issue reports an incorrect boolean matrix pattern without a stacktrace or named function.
+        Tests provide executable anchors that constrain where matrix assembly actually occurs.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>3) Step 2 — Trace-Guided Analysis (Execution Causal Skeleton)</h2>
+      <p>
+        Trace-guided analysis narrows the search to the internal separability pipeline and surfaces the operator combiner for <code>&amp;</code>.
+      </p>
+
+      <details>
+        <summary><strong>Coverage / call graph (test → suspect chain)</strong></summary>
+        <pre><code>astropy/modeling/tests/test_separable.py::test_separable →
+  • astropy/modeling/separable.py::is_separable
+  • astropy/modeling/separable.py::separability_matrix
+
+astropy/modeling/separable.py::is_separable →
+  • astropy/modeling/core.py::CompoundModel.n_inputs
+  • astropy/modeling/core.py::CompoundModel.n_outputs
+  • astropy/modeling/separable.py::_separable
+
+astropy/modeling/separable.py::separability_matrix →
+  • astropy/modeling/core.py::CompoundModel.n_inputs
+  • astropy/modeling/core.py::CompoundModel.n_outputs
+  • astropy/modeling/separable.py::_separable
+
+astropy/modeling/separable.py::_separable →
+  • astropy/modeling/separable.py::_separable
+  • astropy/modeling/core.py::CompoundModel._calculate_separability_matrix
+  • astropy/modeling/core.py::Mapping._calculate_separability_matrix
+  • astropy/modeling/core.py::Polynomial2D._calculate_separability_matrix
+  • astropy/modeling/core.py::Rotation2D._calculate_separability_matrix
+  • astropy/modeling/core.py::Scale._calculate_separability_matrix
+  • astropy/modeling/core.py::Shift._calculate_separability_matrix
+  • astropy/modeling/mappings.py::Mapping.n_outputs
+  • astropy/modeling/separable.py::_cdot
+  • astropy/modeling/separable.py::_coord_matrix
+  • astropy/modeling/separable.py::_cstack</code></pre>
+      </details>
+
+      <p>
+        <strong>Suspicious locations (trace-guided).</strong>
+        Candidates include <code>_separable</code> (dispatch) and <code>_cstack</code> (combiner for <code>&amp;</code>).
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>4) Step 3 — Contextual Refinement</h2>
+      <p>
+        IssueExec retrieves structure around <code>astropy/modeling/separable.py</code> so reranking can distinguish the router layer
+        (<code>_separable</code>) from the matrix assembly logic (<code>_cstack</code>).
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>5) Step 4 — Final Reranking (Ranked Edit Locations)</h2>
+
+      <details>
+        <summary><strong>Candidate contexts (abridged)</strong></summary>
+
+        <p><strong>Candidate 1: <code>_separable</code> (dispatch)</strong></p>
+        <pre><code>elif isinstance(transform, CompoundModel):
+    sepleft = _separable(transform.left)
+    sepright = _separable(transform.right)
+    return _operators[transform.op](sepleft, sepright)</code></pre>
+
+        <p><strong>Candidate 2 (GT): <code>_cstack</code> (combiner for <code>&amp;</code>)</strong></p>
+        <pre><code>if isinstance(right, Model):
+    cright = _coord_matrix(right, 'right', noutp)
+else:
+    cright = np.zeros((noutp, right.shape[1]))
+    cright[-right.shape[0]:, -right.shape[1]:] = 1</code></pre>
+      </details>
+
+      <p><strong>Final ranked edit locations <code>L*</code> (Top-k).</strong></p>
+      <ol>
+        <li>✅ <code>astropy/modeling/separable.py::_cstack</code> (GT)</li>
+        <li><code>astropy/modeling/separable.py::_separable</code></li>
+      </ol>
+
+      <p class="note">
+        Symptom-level alignment: in nested compounds, <code>right</code> often becomes an ndarray via recursion;
+        the ndarray branch in <code>_cstack</code> fills the corresponding block with <code>1</code> (all True),
+        exactly matching the erroneous bottom-right 2×2 all-True pattern.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>6) Baseline (SWE-agent) — Failure Summary</h2>
+      <ul>
+        <li><strong>Build/import failure:</strong> compiled extensions required; environment setup fails, blocking execution.</li>
+        <li><strong>No robust fallback:</strong> does not switch to static localization (e.g., search for <code>separability_matrix</code> / <code>_cstack</code>).</li>
+        <li><strong>Off-target patch:</strong> modifies only a standalone simulation/reproduction script; no library source file edited.</li>
+      </ul>
+      <p class="note">
+        Key contrast: IssueExec reuses existing tests and (offline) traces, avoiding brittle “must build everything inside the agent” dependency.
+      </p>
+    </section>
+
+
+
+    <section class="card">
+      <h2>7) Step 5 — Patch Generation</h2>
+      <p>
+        With <code>astropy/modeling/separable.py::_cstack</code> identified as the Top-1 edit location, we apply a targeted fix
+        to the ndarray branch responsible for composing separability blocks under the <code>&amp;</code> operator.
+        The goal is to preserve dependency structure when <code>right</code> is already a matrix produced by nested recursion,
+        instead of collapsing it into an all-True block.
+      </p>
+
+      <p class="note">
+        In this instance, nested <code>CompoundModel</code> composition turns the <code>right</code> side into an ndarray that already encodes
+        internal separability. Filling the bottom-right block with ones erases that structure, producing the reported
+        “bottom-right 2×2 all-True” artifact. The patch copies the matrix into the corresponding block to retain the correct pattern.
+      </p>
+
+      <details>
+        <summary><strong>Resolved patch (at <code>_cstack</code>)</strong></summary>
+        <pre><code>diff --git a/astropy/modeling/separable.py b/astropy/modeling/separable.py
+--- a/astropy/modeling/separable.py
++++ b/astropy/modeling/separable.py
+@@ -242,7 +242,12 @@ def _cstack(left, right):
+         cright = _coord_matrix(right, 'right', noutp)
+     else:
+         cright = np.zeros((noutp, right.shape[1]))
+-        cright[-right.shape[0]:, -right.shape[1]:] = 1
++        # When `right` is already a matrix (e.g. from nested CompoundModel recursion),
++        # preserve its internal dependency structure instead of filling with ones.
++        r0, r1 = right.shape
++        block = cright[-r0:, -r1:]
++        np.copyto(block, right, casting="no")
+
+     return np.hstack([cleft, cright])</code></pre>
+      </details>
+
+      <p class="note">
+        Outcome: the fix removes the spurious all-True coupling in nested compositions and resolves the instance under the SWE-bench Lite setup.
+      </p>
+    </section>
+
+
+
+
+    <section class="card">
+      <h2>8) Takeaway</h2>
+      <p>
+        This is the canonical win: tests anchor the semantics, traces isolate the <code>&amp;</code> combiner, and reranking pinpoints
+        the exact faulty branch in <code>_cstack</code> based on the observed matrix-pattern symptom.
+      </p>
+    </section>
+
+    <footer class="footer">
+      <p>© Anonymous submission — artifact homepage for review only.</p>
+    </footer>
+  </main>
+</body>
+</html>

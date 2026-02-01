@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Case Study — Bad Case #1 (Placeholder) — IssueExec</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+</head>
+
+<body>
+  <main class="container">
+    <header class="hero">
+      <div class="badge">Illustrative Case Study (Bad Case)</div>
+      <h1>Bad Case #1 (Placeholder)</h1>
+      <p class="subtitle">
+        Replace this page with a failure case where IssueExec does not localize the ground truth.
+        Recommended: a “coverage gap” failure (GT ∉ Cov(T<sub>d</sub>)).
+      </p>
+      <p><a href="./index.html">← Back to Case Studies</a> &nbsp; | &nbsp; <a href="../index.html">Homepage</a></p>
+    </header>
+
+    <section class="card">
+      <h2>Outcome</h2>
+      <p class="note">
+        ❌ <strong>Localization failure</strong> — ground-truth edit location not recovered in top-k.<br/>
+        Suggested narrative: selected tests are relevant, but their execution traces do not cover the true edit location.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>0) Metadata (Fill in)</h2>
+      <ul>
+        <li><strong>Dataset:</strong> SWE-bench-Lite</li>
+        <li><strong>Instance ID:</strong> <code>TODO</code></li>
+        <li><strong>Repository:</strong> <code>TODO</code></li>
+        <li><strong>Base commit:</strong> <code>TODO</code></li>
+        <li><strong>Issue:</strong> <code>TODO</code></li>
+        <li><strong>Ground Truth:</strong> <code>TODO</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>1) Failure Mode (Recommended: Coverage Gap)</h2>
+      <ul>
+        <li><strong>What happened:</strong> IssueExec retrieved relevant tests, but <code>Cov(Td)</code> did not include the GT location.</li>
+        <li><strong>Why it matters:</strong> Trace-guided localization constrains candidates to executed paths; if GT is never executed, recall is limited.</li>
+        <li><strong>Evidence to include:</strong> show selected <code>Td</code> and the trace/call graph; then show GT location absent from coverage.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>2) Artifacts to Include (Checklist)</h2>
+      <div class="grid">
+        <div class="item" aria-label="Checklist item">
+          <div class="item-title">Issue excerpt</div>
+          <div class="item-desc">Abridged original issue description and expected vs actual behavior.</div>
+        </div>
+        <div class="item" aria-label="Checklist item">
+          <div class="item-title">BM25 Top-10 + LLM-selected Td</div>
+          <div class="item-desc">Show retrieval alignment; explain why chosen tests looked relevant.</div>
+        </div>
+        <div class="item" aria-label="Checklist item">
+          <div class="item-title">Coverage / call graph</div>
+          <div class="item-desc">Demonstrate GT is outside Cov(Td).</div>
+        </div>
+        <div class="item" aria-label="Checklist item">
+          <div class="item-title">Top-k predictions</div>
+          <div class="item-desc">List IssueExec predicted locations and why they are plausible but wrong.</div>
+        </div>
+      </div>
+
+      <details>
+        <summary><strong>Optional: suggested “what would fix it” discussion</strong></summary>
+        <ul>
+          <li>Retrieve additional tests beyond <code>k</code>, or diversify <code>Td</code>.</li>
+          <li>Fallback expansion beyond <code>Cov(Td)</code> using structural context (module-level refinement).</li>
+          <li>Augment traces with additional execution scenarios.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>3) Baseline Comparison (Optional)</h2>
+      <p>
+        If a baseline succeeds where IssueExec fails, summarize why (e.g., baseline retrieves a different file due to lexical overlap).
+        Otherwise, document that both fail or succeed differently.
+      </p>
+    </section>
+
+    <footer class="footer">
+      <p>© Anonymous submission — artifact homepage for review only.</p>
+    </footer>
+  </main>
+</body>
+</html>

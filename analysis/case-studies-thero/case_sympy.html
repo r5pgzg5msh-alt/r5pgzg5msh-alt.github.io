@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Case Study — sympy__sympy-19783 (GOOD)</title>
+
+  <!-- Same minimal, GitHub-Pages-friendly styling (no external assets required) -->
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #111824;
+      --text: #e8eef7;
+      --muted: #a9b6c7;
+      --link: #7dd3fc;
+      --border: rgba(255,255,255,0.12);
+      --code: #0f1623;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --panel: #f7fafc;
+        --text: #0b1220;
+        --muted: #4b5563;
+        --link: #0369a1;
+        --border: rgba(0,0,0,0.12);
+        --code: #eef2ff;
+      }
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      line-height: 1.55;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+    header {
+      padding: 10px 0 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 18px;
+    }
+    .crumbs { font-size: 14px; color: var(--muted); }
+    .crumbs a { color: var(--muted); }
+    h1 { font-size: 30px; margin: 8px 0 10px; }
+    .subtitle { color: var(--muted); margin: 0 0 12px; }
+
+    .pillrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin: 18px 0 14px;
+    }
+    @media (min-width: 860px) {
+      .grid { grid-template-columns: 1.2fr 0.8fr; }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 14px;
+    }
+    .card h2 { font-size: 18px; margin: 0 0 8px; }
+    .card h3 { font-size: 16px; margin: 14px 0 6px; }
+
+    .muted { color: var(--muted); }
+    .small { font-size: 14px; }
+    .hr { height: 1px; background: var(--border); margin: 18px 0; }
+
+    .callout {
+      border-left: 4px solid rgba(52,211,153,0.6);
+      padding: 10px 12px;
+      background: rgba(52,211,153,0.06);
+      border-radius: 10px;
+    }
+
+    .badge { font-weight: 800; }
+    .badge.ok { color: var(--ok); }
+    .badge.warn { color: var(--warn); }
+    .badge.bad { color: var(--bad); }
+
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    pre {
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      overflow: auto;
+      margin: 10px 0;
+    }
+
+    details {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.02);
+      margin: 10px 0;
+    }
+    summary { cursor: pointer; font-weight: 650; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 10px 0;
+      background: rgba(255,255,255,0.02);
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th { background: rgba(255,255,255,0.04); }
+    tr:last-child td { border-bottom: none; }
+
+    footer {
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+
+  <!-- MathJax (optional; consistent with theoretical_motivation) -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="crumbs">
+        <a href="../index.html">Home</a> / <a href="./index.html">Case Studies</a> / sympy__sympy-19783
+      </div>
+      <h1>
+        Case Study: <code><a href="https://github.com/sympy/sympy/issues/19747">sympy-Issues-19747</a></code>
+      </h1>
+      <p class="subtitle">
+        Space compression success: retrieved tests induce a small trace-covered subspace that fully contains the ground-truth edits,
+        yielding a large positive entropy gain.
+      </p>
+      <div class="pillrow">
+        <span class="pill">k_test=5</span>
+        <span class="pill">k_ret=10</span>
+        <span class="pill">N=28222</span>
+        <span class="pill">N_cov=626</span>
+        <span class="pill">ext_failure=false</span>
+        <span class="pill">ΔH=15.462</span>
+      </div>
+    </header>
+
+    <section class="grid">
+      <!-- Left: narrative -->
+      <div class="card">
+        <h2>One-screen takeaway</h2>
+        <div class="callout small">
+          <b>Why this is a “good case”:</b>
+          Test retrieval finds multiple effective tests ($n=4/5$), whose union coverage subspace is ~45× smaller than the global space
+          while still containing <b>all</b> ground-truth edits ($g_{\text{excl}}=0$). The indirect pipeline therefore recovers both GT locations
+          in the trace-constrained top-10, producing a very large positive gain.
+        </div>
+
+        <h3>Issue summary</h3>
+        <p class="small">
+          <b>Title:</b> <span class="muted">Dagger() * IdentityOperator() is not simplified</span><br/>
+          <b>Symptom:</b> multiplying <code>Dagger(A)</code> by <code>IdentityOperator()</code> fails to simplify, returning an expression like
+          <code>A^\dagger I</code> instead of <code>A^\dagger</code>.
+        </p>
+
+        <details class="small">
+          <summary>Problem statement snippet</summary>
+          <pre><code>from sympy.physics.quantum.dagger import Dagger
+from sympy.physics.quantum import IdentityOperator
+A = Operators('A')
+Identity = IdentityOperator()
+A * Identity  # gives A, correctly
+B = Dagger(A)
+B * Identity  # returns A^\dagger I</code></pre>
+        </details>
+
+        <div class="hr"></div>
+
+        <h3>Outcome</h3>
+        <table>
+          <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
+          <tr><td>Direct entropy</td><td><b>$H_{\text{direct}}=18.1059$</b></td><td>Issue→code top-10 contains only 1/2 GT.</td></tr>
+          <tr><td>Indirect entropy</td><td><b>$H_{\text{indirect}}=2.6439$</b></td><td>Stage1 + Stage2 after test-driven routing.</td></tr>
+          <tr><td>Entropy gain</td><td><b>$\Delta H=15.4621$</b></td><td>Huge positive uncertainty reduction.</td></tr>
+          <tr><td>External failure</td><td><b>false</b></td><td>$g_{\text{excl}}=0$, no coverage gap penalty.</td></tr>
+        </table>
+      </div>
+
+      <!-- Right: key quantities table -->
+      <div class="card">
+        <h2>Key quantities (inspectable)</h2>
+        <table>
+          <tr><th>Item</th><th>Value</th><th>Notes</th></tr>
+
+          <tr>
+            <td>Instance</td>
+            <td><code>sympy__sympy-19783</code></td>
+            <td>Good case (compression success).</td>
+          </tr>
+
+          <tr>
+            <td>Budgets</td>
+            <td>$k_{\text{test}}=5$, $k_{\text{ret}}=10$</td>
+            <td>Same as default empirical setting.</td>
+          </tr>
+
+          <tr>
+            <td>Global space</td>
+            <td>$N=28222$</td>
+            <td>#candidate functions/methods.</td>
+          </tr>
+
+          <tr>
+            <td>Trace subspace</td>
+            <td>$N_{\text{cov}}=626$</td>
+            <td>Union coverage size (L_sub_size). Compression $\approx 28222/626 \approx 45.1\times$.</td>
+          </tr>
+
+          <tr>
+            <td>Ground truth</td>
+            <td>$|G|=2$</td>
+            <td>Two GT edit locations.</td>
+          </tr>
+
+          <tr>
+            <td>Direct hits</td>
+            <td>$g_{\text{ret}}=1$</td>
+            <td>Direct top-10 contains 1/2 GT.</td>
+          </tr>
+
+          <tr>
+            <td>Indirect hits</td>
+            <td>$g_{\text{ret}}=2$</td>
+            <td>Indirect top-10 contains 2/2 GT.</td>
+          </tr>
+
+          <tr>
+            <td>Effective tests</td>
+            <td>$n=4$ (out of 5)</td>
+            <td>Stage1 entropy $H_{\text{stage1}}=-\log_2(4/5)=0.3219$.</td>
+          </tr>
+
+          <tr>
+            <td>Coverage gap</td>
+            <td>$g_{\text{excl}}=0$</td>
+            <td>No GT lies outside trace coverage.</td>
+          </tr>
+        </table>
+
+        <div class="callout small" style="margin-top:10px;">
+          <b>Compression alone is not enough</b> in general—but here it is paired with
+          <b>full GT coverage</b> and high effective-test ratio, so Stage2 uncertainty collapses.
+        </div>
+      </div>
+    </section>
+
+    <!-- Evidence blocks -->
+    <section class="card">
+      <h2>Evidence (lists used in the computation)</h2>
+
+      <details open class="small">
+        <summary>Ground-truth edit locations (|G|=2)</summary>
+        <pre><code>sympy/physics/quantum/dagger.py::Dagger.__new__
+sympy/physics/quantum/operator.py::IdentityOperator.__mul__</code></pre>
+      </details>
+
+      <details class="small">
+        <summary>Selected tests (k_test=5) and effective tests (n=4)</summary>
+        <pre><code>Selected tests:
+- sympy/physics/quantum/tests/test_operator.py::test_operator_dagger   (effective)
+- sympy/core/tests/test_args.py::test_sympy__physics__quantum__operator__IdentityOperator
+- sympy/physics/quantum/tests/test_operator.py::test_identity          (effective)
+- sympy/core/tests/test_args.py::test_sympy__physics__quantum__dagger__Dagger (effective)
+- sympy/physics/quantum/tests/test_dagger.py::test_scalars             (effective)
+
+Effective tests (cover at least one GT):
+- sympy/physics/quantum/tests/test_operator.py::test_operator_dagger
+- sympy/physics/quantum/tests/test_operator.py::test_identity
+- sympy/core/tests/test_args.py::test_sympy__physics__quantum__dagger__Dagger
+- sympy/physics/quantum/tests/test_dagger.py::test_scalars</code></pre>
+      </details>
+
+      <details class="small">
+        <summary>Direct vs Indirect top-k returned functions (k_ret=10)</summary>
+        <pre><code>Direct top-10:
+1. sympy/physics/quantum/operator.py::IdentityOperator.__init__
+2. sympy/physics/quantum/operator.py::IdentityOperator.__mul__               [GT ✓]
+3. sympy/physics/quantum/operator.py::IdentityOperator._print_contents
+4. sympy/physics/quantum/operator.py::IdentityOperator._eval_commutator
+5. sympy/physics/quantum/operator.py::IdentityOperator._print_contents_latex
+6. sympy/physics/quantum/operator.py::IdentityOperator._apply_operator
+7. sympy/physics/quantum/operator.py::IdentityOperator.default_args
+8. sympy/physics/quantum/operator.py::IdentityOperator._print_contents_pretty
+9. sympy/physics/quantum/operator.py::IdentityOperator._eval_adjoint
+10. sympy/physics/quantum/operator.py::IdentityOperator.dimension
+
+Indirect (trace-constrained) top-10:
+1. sympy/physics/quantum/operator.py::IdentityOperator.__init__
+2. sympy/physics/quantum/operator.py::IdentityOperator.__mul__               [GT ✓]
+3. sympy/physics/quantum/operator.py::IdentityOperator._eval_adjoint
+4. sympy/physics/quantum/operator.py::IdentityOperator._eval_inverse
+5. sympy/physics/quantum/dagger.py::Dagger.__new__                            [GT ✓]
+6. sympy/physics/quantum/operator.py::IdentityOperator._represent_default_basis
+7. sympy/physics/quantum/operator.py::Operator.inverse
+8. sympy/physics/quantum/operator.py::Operator.__mul__
+9. sympy/functions/elementary/miscellaneous.py::IdentityFunction.__new__
+10. sympy/physics/quantum/hilbert.py::ComplexSpace.eval</code></pre>
+      </details>
+    </section>
+
+    <!-- Computation -->
+    <section class="card">
+      <h2>Computed uncertainty terms (numbers for this case)</h2>
+
+      <table>
+        <tr><th>Term</th><th>Value</th><th>How it was obtained</th></tr>
+        <tr><td>$H_{\text{direct}}$</td><td><b>18.105949</b></td><td>From $(N=28222, k_{\text{ret}}=10, |G|=2, g_{\text{ret}}=1)$.</td></tr>
+        <tr><td>$H_{\text{stage1}}$</td><td><b>0.321928</b></td><td>$-\log_2(n/k_{\text{test}})=-\log_2(4/5)$.</td></tr>
+        <tr><td>$H_{\text{stage2}}$</td><td><b>2.321928</b></td><td>No external penalty ($g_{\text{excl}}=0$); GT concentrated in $S_{\text{ret}}$.</td></tr>
+        <tr><td>$H_{\text{indirect}}$</td><td><b>2.643856</b></td><td>$H_{\text{stage1}} + H_{\text{stage2}}$.</td></tr>
+        <tr><td>$\Delta H$</td><td><b>15.462093</b></td><td>$H_{\text{direct}} - H_{\text{indirect}}$.</td></tr>
+      </table>
+
+      <details class="small">
+        <summary>Raw parameter slice (for reproducibility)</summary>
+        <pre><code>{
+  "instance_id": "sympy__sympy-19783",
+  "k_test": 5,
+  "k_ret": 10,
+  "gt_threshold": 1.0,
+  "N": 28222,
+  "L_sub_size": 626,
+  "total_gt": 2,
+  "gt_covered_by_tests": 2,
+  "g_ret_direct": 1,
+  "g_ret_indirect": 2,
+  "g_ext": 0,
+  "n_effective": 4,
+  "H_direct": 18.105949419261542,
+  "H_stage1": 0.3219280948873623,
+  "H_stage2": 2.321928094887362,
+  "H_indirect": 2.6438561897747244,
+  "delta_H": 15.462093229486818
+}</code></pre>
+      </details>
+
+      <div class="callout small">
+        <b>Takeaway:</b> A small set of relevant tests shrinks the search space by ~45× while still covering all GT edits.
+        This enables trace-constrained ranking to recover both GT locations in top-10, yielding a very large positive $\Delta H$.
+      </div>
+    </section>
+
+    <footer>
+      <div style="margin-top:8px;">
+        © IssueExec Artifact (anonymous). Minimal page with inspectable intermediate quantities.
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

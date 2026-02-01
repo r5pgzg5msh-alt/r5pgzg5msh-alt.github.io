@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Illustrative Case Studies — IssueExec</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+</head>
+<body>
+  <main class="container">
+    <header class="hero">
+      <div class="badge">Illustrative Case Studies</div>
+      <h1>Case Studies for IssueExec</h1>
+      <p class="subtitle">
+        Two good cases (IssueExec outperforms baseline) and two bad cases (IssueExec fails), presented as reproducible case packets.
+      </p>
+      <p><a href="../index.html">← Back to Homepage</a></p>
+    </header>
+
+    <section class="card">
+      <h2>Good Cases</h2>
+      <div class="grid">
+        <a class="item" href="./matplotlib__matplotlib-23476.html">
+          <div class="item-title">✅ matplotlib__matplotlib-23476</div>
+          <div class="item-desc">DPI doubles after unpickling on M1 Mac → trace funnels to Figure.__getstate__ (GT).</div>
+        </a>
+        <a class="item" href="./astropy__astropy-12907.html">
+          <div class="item-title">✅ astropy__astropy-12907</div>
+          <div class="item-desc">Nested CompoundModel separability bug → pinpoints _cstack (GT).</div>
+        </a>
+      </div>
+    </section>
+
+  <section class="card">
+    <h2>Bad Cases</h2>
+    <p class="note">
+      Two failure cases are provided below. Each illustrates a different limitation mode.
+    </p>
+    <div class="grid">
+      <a class="item" href="./django__django-10924.html">
+        <div class="item-title">❌ django__django-10924</div>
+        <div class="item-desc">Coverage gap: GT (FilePathField.formfield) ∉ Cov(Td).</div>
+      </a>
+
+      <a class="item" href="./sphinx-doc__sphinx-8474.html">
+        <div class="item-title">❌ sphinx-doc__sphinx-8474</div>
+        <div class="item-desc">Deep call chain: GT (StandardDomain._resolve_numref_xref) ∈ Cov(Td) but not surfaced as L*.</div>
+      </a>
+    </div>
+  </section>
+
+
+
+    <footer class="footer">
+      <p>© Anonymous submission — artifact homepage for review only.</p>
+    </footer>
+  </main>
+</body>
+</html>

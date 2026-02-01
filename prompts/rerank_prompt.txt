@@ -1,0 +1,75 @@
+# Code Location Reranking Task
+
+## Objective
+Rerank candidate code locations by likelihood of containing the **root cause requiring modification**.
+- Identify **clusters** that must be modified together to maintain consistency.
+- Prefer **root cause** over symptom-only locations.
+- **Filter out** locations that do not require code changes.
+
+**Issue Description**:
+{problem_statement}
+
+**Candidate Code Locations**:
+{candidate_locations}
+
+## Input Format
+Part 1: Location overview (numbered list of ALL candidates):
+```
+(1) file_path::identifier
+(2) file_path::identifier
+...
+```
+
+Part 2: Location details for each candidate (separated by ---):
+```
+### Location N: file_path::identifier ###
+```python
+<code content>
+```
+```
+
+Identifier may be:
+- `ClassName`
+- `function_name`
+- `ClassName.method_name`
+
+For large classes, only a skeleton may be provided.
+
+## Ranking Criteria
+1. Root cause vs symptom (highest weight)
+- Prefer producers/transformers of incorrect data/state.
+- Deprioritize pure downstream consumers.
+- Exclude pure observers (logging, reporting, display-only) unless they must change for correctness.
+
+2. Consistency clustering (critical)
+- Paired/symmetric operations (encode/decode, serialize/deserialize, add/remove, etc.) should be kept consistent.
+- Same-class methods sharing state may need coordinated edits.
+- Shared data format/structure changes can require multiple locations to update.
+
+3. Architectural appropriateness
+- Favor fixes at the correct abstraction level with minimal side effects.
+
+4. Causal chain position
+- Upstream cause > midstream transform > downstream consume > observer (exclude).
+
+## Filtering Rule
+Exclude a location if it is:
+- Unrelated to the issue, OR
+- Only a symptom manifestation point, OR
+- A passive observer (logger/monitor/UI renderer) that does not affect buggy behavior.
+
+When uncertain, err on the side of inclusion.
+
+## Output Format Requirements
+Output ONLY the final reranked list wrapped in triple backticks:
+```
+(1) file_path::identifier
+(2) file_path::identifier
+...
+```
+
+Requirements:
+- Sequential numbering (1), (2), (3)...
+- Include ONLY locations that require modification (may be fewer than the overview)
+- Use EXACT identifiers as provided in the input
+- No explanations or extra text inside the code block

@@ -1,0 +1,74 @@
+IssueExec Prompt Notes — rerank_prompt.txt
+=========================================
+
+Stage
+-----
+Online Stage 4 (Final Ranked Edit Locations L*).
+(After contextual refinement expands candidates and retrieves code contexts.)
+
+Goal
+----
+- Rerank candidate locations by likelihood of containing root cause requiring modification.
+- Identify clusters that must change together for consistency.
+- Filter out symptom-only locations and passive observers.
+
+Inputs
+------
+{problem_statement}
+- Issue description.
+
+{candidate_locations}
+- Must be provided in TWO parts:
+  Part 1: numbered overview list of ALL candidates
+  Part 2: per-location code context blocks (each separated by ---)
+
+Important: "identifier" must match exactly one of:
+- ClassName
+- function_name
+- ClassName.method_name
+
+Ranking criteria (high-level)
+-----------------------------
+1) Root cause vs symptom (highest weight)
+2) Consistency clustering (paired operations / shared state)
+3) Architectural appropriateness (correct abstraction level, minimal side effects)
+4) Causal chain position (upstream cause > midstream > downstream > observer)
+
+Filtering rule
+--------------
+Exclude candidates that are:
+- unrelated
+- symptom-only manifestation points
+- pure observers (logging/UI/reporting) unless they must change for correctness
+
+When uncertain, err on the side of inclusion.
+
+Output (STRICT)
+---------------
+Output ONLY the final reranked list in triple backticks:
+(1) file_path::identifier
+(2) file_path::identifier
+...
+
+Requirements:
+- sequential numbering (1), (2), ...
+- include ONLY locations that require modification (can be fewer than inputs)
+- use EXACT identifiers as provided (do not rename)
+- no explanations or extra text inside the code block
+
+Common failure modes & mitigations
+----------------------------------
+A) Identifier mismatch (renamed or reformatted identifiers)
+- Mitigation: strict parser: output identifiers must match one of the input overview entries exactly.
+
+B) Over-filtering (empty list)
+- Mitigation: allow inclusion when uncertain; ensure at least one candidate remains unless truly impossible.
+
+C) Reranking dominated by long code blocks
+- Mitigation: provide compressed skeleton for large modules, but include the most relevant functions fully.
+
+Recommended validation
+----------------------
+- Every output line must correspond to one candidate from the overview list (exact match).
+- Ensure output is a single triple-backtick fenced block.
+- Ensure numbering is consecutive starting at 1.

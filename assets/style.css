@@ -1,0 +1,112 @@
+:root{
+  --bg:#0b0e14;
+  --card:#121826;
+  --text:#e7eaf0;
+  --muted:#a9b0c3;
+  --border:#243045;
+  --accent:#7aa2ff;
+  --accent2:#7ef0c1;
+}
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  background: radial-gradient(1200px 600px at 10% 0%, rgba(122,162,255,.18), transparent 60%),
+              radial-gradient(900px 500px at 90% 10%, rgba(126,240,193,.12), transparent 55%),
+              var(--bg);
+  color:var(--text);
+  line-height:1.6;
+}
+
+a{color:inherit}
+.container{max-width:980px;margin:0 auto;padding:28px 18px 52px}
+.hero{
+  padding:22px 18px 18px;
+  border:1px solid var(--border);
+  border-radius:18px;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+}
+.badge{
+  display:inline-block;
+  padding:6px 10px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  color:var(--muted);
+  font-size:13px;
+}
+h1{
+  margin:14px 0 8px;
+  font-size:32px;
+  letter-spacing:-0.02em;
+}
+.subtitle{margin:0;color:var(--muted)}
+
+.card{
+  margin-top:16px;
+  padding:18px;
+  border:1px solid var(--border);
+  border-radius:18px;
+  background: rgba(18,24,38,.72);
+  backdrop-filter: blur(6px);
+}
+h2{margin:0 0 10px;font-size:18px}
+ul,ol{margin:10px 0 0 18px;color:var(--muted)}
+p{margin:10px 0;color:var(--muted)}
+.note{margin-top:12px;font-size:14px}
+
+.grid{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap:12px;
+}
+.item{
+  text-decoration:none;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background: rgba(255,255,255,.02);
+  transition: transform .12s ease, border-color .12s ease;
+}
+.item:hover{transform: translateY(-2px); border-color: rgba(122,162,255,.45)}
+.item-title{font-weight:650;color:var(--text)}
+.item-desc{margin-top:6px;color:var(--muted);font-size:14px}
+
+details{
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px 12px;
+  margin-top:10px;
+  background: rgba(255,255,255,.02);
+}
+summary{cursor:pointer;color:var(--text);font-weight:600}
+.footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+
+strong{color:var(--text)}
+
+
+.prompt-pre {
+  margin: 12px 0 0;
+  padding: 12px;
+  overflow: auto;
+  max-height: 520px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(0,0,0,0.03);
+}
+
+.prompt-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+table{
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

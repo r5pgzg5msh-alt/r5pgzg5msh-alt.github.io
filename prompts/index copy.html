@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LLM Prompts — IssueExec (Anonymous Artifact)</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+</head>
+
+<body>
+  <main class="container">
+    <header class="hero">
+      <div class="badge">LLM Prompts (Anonymous)</div>
+      <h1>LLM Prompts Used in IssueExec</h1>
+      <p class="subtitle">
+        This page provides the prompts used in each stage of the IssueExec pipeline.
+        Prompts are published as plain-text files to enable direct inspection and reproducibility.
+      </p>
+      <p><a href="../index.html">← Back to Homepage</a></p>
+    </header>
+
+    <section class="card">
+      <h2>What’s included</h2>
+      <ul>
+        <li><a href="#test-selection"><strong>Test selection</strong></a> prompt (select <code>T<sub>d</sub></code> from BM25 candidates).</li>
+        <li><a href="#trace-analysis"><strong>Trace-guided analysis</strong></a> prompts (blind-spot analysis + suspicious location mapping).</li>
+        <li><a href="#reranking"><strong>Code-aware reranking</strong></a> prompt (produce final ranked edit locations <code>L*</code>).</li>
+      </ul>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- Test selection -->
+    <!-- ========================================================= -->
+    <section id="test-selection" class="card">
+      <h2>1) Test Selection (Select <code>T<sub>d</sub></code>)</h2>
+      <p>
+        Purpose: select up to <code>k</code> tests that are most likely to be requirement-relevant to the issue’s
+        root-cause component. The prompt explicitly treats many issues as <strong>false negative tests</strong>
+        (tests that should fail but do not because they do not validate the triggering requirement/condition).
+      </p>
+
+      <div class="grid">
+        <a class="item" href="./test_selection_prompt.txt" aria-label="Open test selection prompt">
+          <div class="item-title">test_selection_prompt.txt</div>
+          <div class="item-desc">Main prompt used for semantic selection (after BM25).</div>
+        </a>
+        <a class="item" href="./test_selection_prompt_notes.txt" aria-label="Open notes for test selection prompt">
+          <div class="item-title">test_selection_prompt_notes.txt</div>
+          <div class="item-desc">Input/output schema, selection heuristics, and common failure modes.</div>
+        </a>
+      </div>
+
+      <details>
+        <summary><strong>Prompt inputs</strong></summary>
+        <ul>
+          <li><code>{problem_statement}</code>: GitHub issue description (natural language).</li>
+          <li><code>{test_functions}</code>: candidate tests with enriched representations (e.g., signature/doc/domain tokens).</li>
+          <li><code>{max_tests}</code>: selection budget <code>k</code>.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><strong>Prompt output (strict)</strong></summary>
+        <ul>
+          <li>Only selected tests, one per line, inside triple backticks.</li>
+          <li>Format: <code>file_path::test_function_name</code>.</li>
+          <li>No explanations, numbering, or additional text.</li>
+        </ul>
+      </details>
+
+      <p class="note">
+        Design intent: keep recall high (better include extra possibly relevant tests than miss critical ones).
+      </p>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- Trace analysis -->
+    <!-- ========================================================= -->
+    <section id="trace-analysis" class="card">
+      <h2>2) Trace-Guided Analysis (BLIND_SPOTS_ANALYSIS → Suspicious Locations)</h2>
+      <p>
+        Purpose: given selected tests and their coverage/call traces, produce (i) a structured blind-spot analysis
+        describing why tests can pass despite the bug, and (ii) a coverage-constrained mapping from mechanisms to
+        concrete production code locations.
+      </p>
+
+      <div class="grid">
+        <a class="item" href="./trace_analysis_prompt.txt" aria-label="Open trace analysis prompts">
+          <div class="item-title">trace_analysis_prompt.txt</div>
+          <div class="item-desc">Contains two prompts: blind spot analysis + suspicious mapping (coverage-constrained).</div>
+        </a>
+        <a class="item" href="./trace_analysis_prompt_notes.txt" aria-label="Open notes for trace analysis prompts">
+          <div class="item-title">trace_analysis_prompt_notes.txt</div>
+          <div class="item-desc">Schema explanation, coverage constraints, and pruning/context guidance.</div>
+        </a>
+      </div>
+
+      <details>
+        <summary><strong>Prompt 1: BLIND_SPOTS_ANALYSIS (what it produces)</strong></summary>
+        <ul>
+          <li><code>false_negative_mechanism</code>: assertion deviation / data assumption defect / logic assumption error</li>
+          <li><code>root_cause_hypothesis</code>: likely root cause behavior + missing requirement + propagation summary</li>
+          <li><code>systematic_risk_areas</code>: symmetric/shared/similar risks</li>
+          <li><code>modification_priority</code>: prioritized inspection list</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><strong>Prompt 2: FALSE_NEGATIVE_CODE_MAPPING (coverage constraint)</strong></summary>
+        <ul>
+          <li>Must ONLY reference identifiers that appear in <code>{test_coverage_locations}</code>.</li>
+          <li>If likely root cause is outside coverage, must output <code>NOT_IN_COVERAGE: ...</code> with limitation explanation.</li>
+          <li>Outputs ranked suspicious locations + reasoning fields in a strict schema.</li>
+        </ul>
+      </details>
+
+      <p class="note">
+        This stage enforces a critical property: the suspicious set is produced within the trace-constrained search space,
+        unless explicitly flagged as <code>NOT_IN_COVERAGE</code>.
+      </p>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- Reranking -->
+    <!-- ========================================================= -->
+    <section id="reranking" class="card">
+      <h2>3) Code-Aware Reranking (Final <code>L*</code>)</h2>
+      <p>
+        Purpose: rerank candidate code locations using full code context; identify clusters that must change together;
+        filter out observer/symptom-only locations; return the final ranked list of edit locations.
+      </p>
+
+      <div class="grid">
+        <a class="item" href="./rerank_prompt.txt" aria-label="Open reranking prompt">
+          <div class="item-title">rerank_prompt.txt</div>
+          <div class="item-desc">Reranks candidates by root-cause likelihood; outputs final list only.</div>
+        </a>
+        <a class="item" href="./rerank_prompt_notes.txt" aria-label="Open notes for reranking prompt">
+          <div class="item-title">rerank_prompt_notes.txt</div>
+          <div class="item-desc">Input formatting, clustering logic, filtering rules, and pitfalls.</div>
+        </a>
+      </div>
+
+      <details>
+        <summary><strong>Input format reminder</strong></summary>
+        <ul>
+          <li>Part 1: numbered list of all candidates (overview).</li>
+          <li>Part 2: per-location code context blocks separated by <code>---</code>.</li>
+          <li>Identifier may be <code>ClassName</code>, <code>function</code>, or <code>ClassName.method</code>.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary><strong>Output format (strict)</strong></summary>
+        <ul>
+          <li>Only the reranked list wrapped in triple backticks.</li>
+          <li>Sequential numbering: <code>(1)</code>, <code>(2)</code>, ...</li>
+          <li>Include only locations that require modification (may be fewer than input candidates).</li>
+          <li>No explanations or extra text in the code block.</li>
+        </ul>
+      </details>
+    </section>
+
+    <footer class="footer">
+      <p>© Anonymous submission — artifact homepage for review only.</p>
+    </footer>
+  </main>
+</body>
+</html>

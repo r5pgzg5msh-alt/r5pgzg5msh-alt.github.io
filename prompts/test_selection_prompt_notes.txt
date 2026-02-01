@@ -1,0 +1,71 @@
+IssueExec Prompt Notes — test_selection_prompt.txt
+=================================================
+
+Stage
+-----
+Online Stage 1 (Relevant Test Retrieval, Semantic Selection).
+Used after BM25 lexical filtering to select Td (top-k tests).
+
+Core intent
+-----------
+This prompt frames many issues as "test false negatives":
+tests that should have prevented the bug but pass because they fail to validate
+the real requirement under triggering conditions.
+
+It prioritizes HIGH RECALL:
+- Better to include extra possibly relevant tests than to miss a critical one.
+
+Inputs
+------
+{problem_statement}
+- A natural language GitHub issue description (may include repro code and stacktrace).
+
+{test_functions}
+- A list of test candidates (usually BM25 top-N).
+- Each candidate SHOULD include an enriched representation such as:
+  - sig(t): fully qualified test identifier
+  - doc(t): docstring (if exists)
+  - Dt: domain tokens mined from commit history (if available)
+  The prompt itself is agnostic to how you format repr(t), but richer evidence helps.
+
+{max_tests}
+- Maximum number of selected tests (k). Typical values: 5.
+
+Output (STRICT)
+---------------
+Must return ONLY selected test identifiers:
+- Wrapped in triple backticks
+- One test per line
+- Format: file_path::test_function_name
+- No numbering, no bullets, no extra commentary
+
+Selection heuristics (operational)
+----------------------------------
+1) Identify root-cause component (producer/transformer of incorrect state),
+   not just the downstream victim.
+2) Prefer tests that directly exercise that component or the problematic method(s).
+3) Include configuration/edge-condition tests related to the issue trigger.
+4) Deprioritize pure downstream consumers unless needed for coverage breadth.
+5) Keep recall high. When uncertain, include.
+
+Common failure modes & mitigations
+----------------------------------
+A) Over-filtering (low recall)
+- Symptom: Td misses the GT-related test module.
+- Mitigation: increase max_tests (k) or increase BM25 candidate N;
+  add domain tokens and docstrings to repr(t).
+
+B) Downstream fixation (selecting only victim tests)
+- Symptom: selected tests focus on crash sites but not the upstream source of incorrect state.
+- Mitigation: ensure candidates include upstream component tests; consider adding
+  project-specific domain tokens (Dt) so the LLM can bridge vocabulary mismatch.
+
+C) Formatting violations
+- Symptom: model outputs bullets/explanations.
+- Mitigation: strict post-validation; retry with stronger formatting reminder if needed.
+
+Recommended validation
+----------------------
+- Enforce regex per line: ^[^\\s]+::[^\\s]+$
+- Enforce count: <= max_tests
+- Ensure output is within a single triple-backtick fenced block

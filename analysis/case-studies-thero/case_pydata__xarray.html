@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Case Study — pydata__xarray-3993 (Bad Case: Coverage Gap)</title>
+
+  <!-- Minimal, GitHub-Pages-friendly styling (no external assets required) -->
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#111824; --text:#e8eef7; --muted:#a9b6c7; --link:#7dd3fc;
+      --border:rgba(255,255,255,.12); --code:#0f1623;
+      --ok:#34d399; --warn:#fbbf24; --bad:#fb7185;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#ffffff; --panel:#f7fafc; --text:#0b1220; --muted:#4b5563; --link:#0369a1;
+        --border:rgba(0,0,0,.12); --code:#eef2ff;
+      }
+    }
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      line-height:1.55;
+    }
+    a{ color:var(--link); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+    .container{ max-width:980px; margin:0 auto; padding:28px 18px 60px; }
+    header{ padding:10px 0 18px; border-bottom:1px solid var(--border); margin-bottom:18px; }
+    .crumbs{ font-size:14px; color:var(--muted); }
+    .crumbs a{ color:var(--muted); }
+    h1{ font-size:28px; margin:8px 0 8px; }
+    .subtitle{ color:var(--muted); margin:0 0 12px; }
+    .pillrow{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 0; }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+      padding:6px 10px; border-radius:999px;
+      font-size:13px; color:var(--muted);
+    }
+    .grid{ display:grid; grid-template-columns:1fr; gap:14px; margin:18px 0 14px; }
+    @media (min-width: 860px){ .grid{ grid-template-columns: 1.2fr 0.8fr; } }
+    .card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px 14px;
+    }
+    .card h2{ font-size:18px; margin:0 0 8px; }
+    .card h3{ font-size:16px; margin:14px 0 6px; }
+    .muted{ color:var(--muted); }
+    .small{ font-size:14px; }
+    .hr{ height:1px; background:var(--border); margin:18px 0; }
+    .callout{
+      border-left:4px solid rgba(251,113,133,.7);
+      padding:10px 12px;
+      background: rgba(251,113,133,.08);
+      border-radius: 10px;
+    }
+    .callout.ok{
+      border-left-color: rgba(52,211,153,.7);
+      background: rgba(52,211,153,.07);
+    }
+    code, pre{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    pre{
+      background:var(--code);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+      overflow:auto;
+      margin:10px 0;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      border:1px solid var(--border);
+      border-radius:12px;
+      overflow:hidden;
+      margin:10px 0;
+      background: rgba(255,255,255,.02);
+    }
+    th, td{
+      text-align:left;
+      padding:10px 10px;
+      border-bottom:1px solid var(--border);
+      vertical-align: top;
+      font-size:14px;
+    }
+    th{ background: rgba(255,255,255,.04); }
+    tr:last-child td{ border-bottom:none; }
+    .badge{ font-weight:800; }
+    .badge.bad{ color: var(--bad); }
+    .badge.ok{ color: var(--ok); }
+    .badge.warn{ color: var(--warn); }
+    details{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      background: rgba(255,255,255,.02);
+      margin:10px 0;
+    }
+    summary{ cursor:pointer; font-weight:650; }
+    .kvs{ display:grid; grid-template-columns: 1fr; gap:10px; }
+    @media (min-width: 720px){ .kvs{ grid-template-columns: 1fr 1fr; } }
+    .kv{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      background: rgba(255,255,255,.02);
+    }
+    .kv b{ display:block; margin-bottom:4px; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    footer{
+      margin-top:36px;
+      padding-top:16px;
+      border-top:1px solid var(--border);
+      color:var(--muted);
+      font-size:13px;
+    }
+    .mathline{ white-space: nowrap; }
+  </style>
+
+  <!-- MathJax (works on GitHub Pages) -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="crumbs">
+        <a href="../index.html">Home</a> /
+        <a href="../analysis/index.html">Analysis</a> /
+        <a href="../analysis/theoretical_motivation.html">Theoretical Motivation</a> /
+        Case Study
+      </div>
+      <h1>Case Study: <a href="https://github.com/pydata/xarray/issues/3992">xarray-Issues-3992</a>  </h1>
+      <p class="subtitle">
+        Failure mode: <b>coverage gap</b> ($g_{excl} > 0$) + <b>weak test selection</b> ($n/k_{test}$ small) causes
+        $H_{indirect} > H_{direct}$, yielding negative gain $\Delta H$.
+      </p>
+
+      <div class="pillrow">
+        <span class="pill">instance_id: <span class="mono">pydata__xarray-3993</span></span>
+        <span class="pill">$k_{test}=5$</span>
+        <span class="pill">$k_{ret}=10$</span>
+        <span class="pill">$gt\\_threshold=1.0$</span>
+        <span class="pill">ext_failure: <span class="badge bad">true</span></span>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Issue summary</h2>
+        <p class="small muted">
+          Dataset.integrate uses <code>coord</code> while DataArray.integrate uses <code>dim</code>; API inconsistency.
+          The desired fix is to align the API (likely use <code>coord</code> consistently) and handle deprecation concerns.
+        </p>
+
+        <details class="small" open>
+          <summary>Problem statement (raw excerpt)</summary>
+          <pre><code>DataArray.integrate has a 'dim' arg, but Dataset.integrate has a 'coord' arg
+
+The API syntax is inconsistent:
+ds.differentiate(coord='x')
+da.differentiate(coord='x')
+ds.integrate(coord='x')
+da.integrate(dim='x')   # why dim??
+
+It should definitely be `coord` ...
+The only question is whether it requires a deprecation cycle?</code></pre>
+        </details>
+
+        <div class="hr"></div>
+
+        <h2>One-screen takeaway</h2>
+        <div class="callout small">
+          <b>What went wrong:</b> only <b>2/4</b> ground-truth locations fall inside the trace subspace
+          induced by retrieved tests, so we incur an external penalty $g_{excl}=2$.
+          Meanwhile only <b>1</b> of the <b>5</b> retrieved tests is effective, so stage 1 also costs extra entropy.
+        </div>
+
+        <div class="kvs small" style="margin-top:12px;">
+          <div class="kv">
+            <b>Observed entropies</b>
+            $H_{direct}=12.7035$<br/>
+            $H_{indirect}=14.2567$<br/>
+            <b>$\Delta H = -1.5533$</b>
+          </div>
+          <div class="kv">
+            <b>Failure signatures</b>
+            $n=1$ effective test out of $k_{test}=5$<br/>
+            $N_{cov}=271 \ll N=2011$ (compression exists)<br/>
+            but $g_{excl}=2$ (coverage gap dominates)
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Key quantities</h2>
+        <table>
+          <tr><th>Symbol</th><th>Value</th><th>Meaning</th></tr>
+          <tr><td>$N$</td><td>2011</td><td>Total candidate locations (functions/methods)</td></tr>
+          <tr><td>$k_{ret}$</td><td>10</td><td>Return budget for code locations</td></tr>
+          <tr><td>$k_{test}$</td><td>5</td><td>Return budget for tests</td></tr>
+          <tr><td>$|G|$</td><td>4</td><td># ground-truth edit locations</td></tr>
+          <tr><td>$N_{cov}$</td><td>271</td><td>Trace subspace size ($|L_{cov}|$)</td></tr>
+          <tr><td>$g_{ret}^{direct}$</td><td>1</td><td>GT hit count in direct top-$k_{ret}$</td></tr>
+          <tr><td>$n$</td><td>1</td><td># effective tests among top-$k_{test}$</td></tr>
+          <tr><td>$g_{ret}^{indirect}$</td><td>2</td><td>GT hit count in indirect top-$k_{ret}$ (within $L_{cov}$)</td></tr>
+          <tr><td>$g_{excl}$</td><td>2</td><td>GT outside trace coverage ($g_{ext}$ in script)</td></tr>
+        </table>
+
+        <div class="callout ok small">
+          <b>Note:</b> Compression exists ($N_{cov}\ll N$), but it’s not sufficient:
+          uncovered GT introduces a penalty term in stage 2.
+        </div>
+
+        <details class="small">
+          <summary>Direct vs indirect: why indirect can be worse</summary>
+          <ul class="small">
+            <li><b>Stage 1 cost:</b> $H_{stage1}=-\log_2(n/k_{test})=-\log_2(1/5)=2.3219$.</li>
+            <li><b>Stage 2 cost:</b> because $g_{excl}>0$, stage 2 includes a term roughly
+              $-\log_2(g_{excl}/N_{excl})$ with $N_{excl}=N-N_{cov}$, which can be large.</li>
+            <li>Net effect: $H_{indirect}=H_{stage1}+H_{stage2}$ becomes larger than $H_{direct}$.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Ground-truth and coverage gap</h2>
+
+      <h3>GT locations</h3>
+      <pre class="small"><code>xarray/core/dataarray.py::DataArray.integrate
+xarray/core/dataset.py::Dataset.integrate
+xarray/core/dataarray.py::DataArray.map_blocks
+xarray/core/dataarray.py::DataArray.unify_chunks</code></pre>
+
+      <h3>Uncovered GT (outside trace coverage)</h3>
+      <div class="callout small">
+        These two are not covered by the union trace subspace from retrieved tests (hence $g_{excl}=2$):
+      </div>
+      <pre class="small"><code>xarray/core/dataarray.py::DataArray.map_blocks
+xarray/core/dataarray.py::DataArray.unify_chunks</code></pre>
+
+      <details class="small">
+        <summary>Interpretation</summary>
+        <p class="small muted">
+          Even if test-driven localization ranks well <i>within</i> $L_{cov}$, it cannot “see” edits outside $L_{cov}$.
+          When the evaluation requires covering all GT locations (here <code>gt_threshold=1.0</code>), uncovered GT forces an external penalty.
+        </p>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Retrieved sets</h2>
+
+      <h3>Selected tests (top-$k_{test}=5$)</h3>
+      <pre class="small"><code>xarray/tests/test_dataset.py::test_differentiate
+xarray/tests/test_dataset.py::test_integrate   (effective)
+xarray/tests/test_dataset.py::TestDataset.test_expand_dims_mixed_int_and_coords
+xarray/tests/test_concat.py::test_concat_merge_single_non_dim_coord
+xarray/tests/test_dataset.py::TestDataset.test_dataset_diff_n2</code></pre>
+
+      <div class="kvs small">
+        <div class="kv">
+          <b>Effective tests</b>
+          Only 1 test covers any GT:
+          <pre class="small"><code>xarray/tests/test_dataset.py::test_integrate</code></pre>
+          Therefore <span class="mathline">$H_{stage1}=-\log_2(1/5)=2.3219$</span>.
+        </div>
+        <div class="kv">
+          <b>Trace subspace size</b>
+          $N_{cov}=271$ (union of coverage over selected tests).<br/>
+          $N_{excl}=N-N_{cov}=2011-271=1740$.
+        </div>
+      </div>
+
+      <h3>Direct top-$k_{ret}=10$ functions</h3>
+      <details class="small">
+        <summary>Show list</summary>
+        <pre><code>xarray/core/coordinates.py::DataArrayCoordinates.dims
+xarray/core/coordinates.py::DatasetCoordinates.dims
+xarray/core/dataarray.py::DataArray.differentiate
+xarray/core/dataset.py::Dataset.differentiate
+xarray/core/dataarray.py::_infer_coords_and_dims
+xarray/core/dataset.py::Dataset.dims
+xarray/core/dataarray.py::DataArray.dims
+xarray/core/dataarray.py::DataArray.dims
+xarray/core/dataarray.py::DataArray.coords
+xarray/core/dataarray.py::DataArray.integrate</code></pre>
+      </details>
+
+      <h3>Indirect top-$k_{ret}=10$ functions (within $L_{cov}$)</h3>
+      <details class="small">
+        <summary>Show list</summary>
+        <pre><code>xarray/core/dataarray.py::DataArray.differentiate
+xarray/core/dataset.py::Dataset.differentiate
+xarray/core/dataarray.py::_infer_coords_and_dims
+xarray/core/dataset.py::Dataset.dims
+xarray/core/dataarray.py::DataArray.dims
+xarray/core/dataarray.py::DataArray.dims
+xarray/core/dataarray.py::DataArray.coords
+xarray/core/dataarray.py::DataArray.integrate
+xarray/core/dataset.py::Dataset.coords
+xarray/core/dataset.py::Dataset.integrate</code></pre>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Entropy terms (numbers used in the artifact)</h2>
+
+      <div class="kvs small">
+        <div class="kv">
+          <b>Direct</b>
+          Inputs: $N=2011$, $k_{ret}=10$, $|G|=4$, $g_{ret}^{direct}=1$.
+          <div class="hr"></div>
+          $$H_{direct} =
+            -\log_2\left(\frac{1}{10}\right)
+            -\log_2\left(\frac{3}{2011-10}\right)
+          \approx 12.7035$$
+          <p class="muted small">
+            (Term 1: ambiguity among returned hits; Term 2: residual uncertainty for the remaining GT outside the returned set.)
+          </p>
+        </div>
+
+        <div class="kv">
+          <b>Indirect</b>
+          Stage 1:
+          $$H_{stage1}=-\log_2\left(\frac{n}{k_{test}}\right)= -\log_2(1/5)=2.3219$$
+          Stage 2 (script output):
+          $$H_{stage2}\approx 11.9348$$
+          Therefore:
+          $$H_{indirect}=H_{stage1}+H_{stage2}\approx 14.2567$$
+          <div class="hr"></div>
+          $$\Delta H = H_{direct}-H_{indirect}\approx -1.5533$$
+        </div>
+      </div>
+
+      <details class="small">
+        <summary>What exactly drives $H_{stage2}$ up here?</summary>
+        <ul class="small">
+          <li>We have compression: $N_{cov}=271$ and $N_{excl}=1740$.</li>
+          <li>But uncovered GT yields $g_{excl}=2$, which contributes a large penalty term of the form
+            $-\log_2(g_{excl}/N_{excl})$.</li>
+          <li>In addition, the GT distribution across partitions (ret/cov/excl) affects the sum of terms.</li>
+        </ul>
+        <p class="small muted">
+          This is the canonical “coverage gap” bad case: trace-constrained localization can’t win if a meaningful portion of GT lies outside traces.
+        </p>
+      </details>
+    </section>
+
+
+    <footer>
+      <div><b>Case type:</b> Bad case (coverage gap + weak stage1)</div>
+      <div style="margin-top:8px;">
+        © IssueExec Artifact (anonymous). This page contains only derived quantities and identifier lists.
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

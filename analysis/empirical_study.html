@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IssueExec Artifact — Empirical Study</title>
+
+  <!-- Minimal, GitHub-Pages-friendly styling (no external assets required) -->
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #111824;
+      --text: #e8eef7;
+      --muted: #a9b6c7;
+      --link: #7dd3fc;
+      --border: rgba(255,255,255,0.12);
+      --code: #0f1623;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+    }
+    /* @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --panel: #f7fafc;
+        --text: #0b1220;
+        --muted: #4b5563;
+        --link: #0369a1;
+        --border: rgba(0,0,0,0.12);
+        --code: #eef2ff;
+      }
+    } */
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      line-height: 1.55;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+    header {
+      padding: 10px 0 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 18px;
+    }
+    .crumbs { font-size: 14px; color: var(--muted); }
+    .crumbs a { color: var(--muted); }
+    h1 { font-size: 30px; margin: 8px 0 10px; }
+    .subtitle { color: var(--muted); margin: 0 0 12px; }
+    .pillrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin: 18px 0 14px;
+    }
+    @media (min-width: 860px) {
+      .grid { grid-template-columns: 1.2fr 0.8fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 14px;
+    }
+    .card h2 { font-size: 18px; margin: 0 0 8px; }
+    .card h3 { font-size: 16px; margin: 14px 0 6px; }
+    .muted { color: var(--muted); }
+    .callout {
+      border-left: 4px solid rgba(125,211,252,0.6);
+      padding: 10px 12px;
+      background: rgba(125,211,252,0.06);
+      border-radius: 10px;
+    }
+    .small { font-size: 14px; }
+    .hr { height: 1px; background: var(--border); margin: 18px 0; }
+    .kvs { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 720px) { .kvs { grid-template-columns: 1fr 1fr; } }
+    .kv {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.02);
+    }
+    .kv b { display: block; margin-bottom: 4px; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    pre {
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      overflow: auto;
+      margin: 10px 0;
+    }
+    .badge { font-weight: 700; }
+    .badge.ok { color: var(--ok); }
+    .badge.warn { color: var(--warn); }
+    .badge.bad { color: var(--bad); }
+    details {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.02);
+      margin: 10px 0;
+    }
+    summary { cursor: pointer; font-weight: 650; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 10px 0;
+      background: rgba(255,255,255,0.02);
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th { background: rgba(255,255,255,0.04); }
+    tr:last-child td { border-bottom: none; }
+    .imgwrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(255,255,255,0.02);
+    }
+    .imgwrap img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    .imgcap { font-size: 13px; color: var(--muted); margin-top: 8px; }
+    .toc a { display: inline-block; margin: 2px 0; }
+    footer {
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+
+  <!-- MathJax (works on GitHub Pages) -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="crumbs">
+        <a href="../index.html">Home</a> / <a href="./index.html">Analysis</a> / Empirical Study
+      </div>
+      <h1>Empirical Study</h1>
+      <p class="subtitle">
+        Empirical validation for the premise that <b>tests act as executable requirements</b> for issue localization.
+        We evaluate three hypotheses: <b>H1 Coverage feasibility</b>, <b>H2 Retrievability</b>, and <b>H3 Bridging effect</b>.
+      </p>
+      <p><a href="../index.html">← Back to Homepage</a></p>
+      <!-- <div class="pillrow">
+        <span class="pill">929 issues</span>
+        <span class="pill">Dynamic traces</span>
+        <span class="pill">Semantic similarity via embeddings</span>
+        <span class="pill">H1/H2/H3 with statistical tests</span>
+      </div> -->
+    </header>
+
+    <!-- Top: one-screen takeaway -->
+    <section class="grid">
+      <div class="card">
+        <h2>One-screen takeaway</h2>
+        <div class="callout small">
+          <b>Summary:</b> Existing tests frequently reach ground-truth edits (H1), covering tests are more semantically aligned
+          with issue descriptions than non-covering tests (H2), and the two-hop pathway
+          <b>Issue $\rightarrow$ Test $\rightarrow$ Location</b> provides stronger semantic connectivity than direct
+          Issue $\rightarrow$ Location matching (H3).
+        </div>
+
+        <h3>Key results (paper-ready)</h3>
+        <ul class="small">
+          <li><b>H1:</b> Mean coverage: <b>96.98%</b> (file), <b>66.70%</b> (function). Search space reduces to <b>58.39%</b> on average.</li>
+          <li><b>H2:</b> Covering tests win in <b>90.9%</b> of instances (paired t-test <b>$p &lt; 0.001$</b>; Cohen’s <b>$d \approx 0.56$</b>).
+              Correlation: Spearman’s <b>$\rho \approx 0.18$</b> ($p &lt; 0.001$).</li>
+          <li><b>H3:</b> Mediated pathway is stronger in <b>82.4%</b> of (issue, location) pairs (paired t-test <b>$p &lt; 0.001$</b>;
+              Cohen’s <b>$d \approx 0.93$</b>).</li>
+        </ul>
+
+        <div class="hr"></div>
+
+        <h3>Where this fits in the artifact</h3>
+        <ul class="small">
+          <li>System pipeline overview: see the paper Section 4 and the <a href="../case-studies/index.html">Case Studies</a>.</li>
+          <li>This page focuses on: <b>empirical evidence</b> and how it informs IssueExec’s design.</li>
+        </ul>
+      </div>
+
+      <div class="card toc">
+        <h2>Quick links</h2>
+        <div class="small">
+          <a href="#setup">1) Setup</a><br/>
+          <a href="#trace">2) Dynamic trace collection</a><br/>
+          <a href="#h1">3) H1 — Coverage feasibility</a><br/>
+          <a href="#h2">4) H2 — Retrievability</a><br/>
+          <a href="#h3">5) H3 — Bridging effect</a><br/>
+          <a href="#implications">6) Implications for IssueExec</a><br/>
+          <a href="#notes">7) Notes & limitations</a><br/>
+        </div>
+
+        <!-- <div class="hr"></div>
+
+        <h2>Quick links</h2>
+        <ul class="small">
+          <li><a href="../prompts/index.html">Prompts</a></li>
+          <li><a href="../case-studies/index.html">Case studies</a></li>
+        </ul>
+      </div> -->
+    </section>
+
+    <!-- 1) Setup -->
+    <section id="setup" class="card">
+      <h2>1) Setup</h2>
+      <p class="small">
+        We study whether tests can serve as <b>executable requirements</b> for localizing software engineering issues.
+        The dataset includes <b>929</b> issue instances drawn from SWE-bench and SWE-bench Gym across <b>18</b> popular Python repositories.
+        Each repository-issue pair is executed in a containerized environment reset to its pre-patch state. To prevent environment
+        configuration errors from confounding results, we retain instances where the test environment is sufficiently robust (at least
+        50% of test functions execute successfully).
+      </p>
+
+      <div class="kvs small">
+        <div class="kv">
+          <b>Ground truth (edit locations)</b>
+          Ground-truth edits are extracted from PR diffs associated with each issue, mapped to function-level locations using
+          fully-qualified identifiers (module / class / function).
+        </div>
+        <div class="kv">
+          <b>Semantic analysis</b>
+          We compute cosine similarity between embeddings of issue descriptions, tests, and code locations. Tests are represented
+          by a textual form (e.g., signature/doc/body) truncated to fit embedding input limits. Code locations are represented by their
+          fully-qualified signatures.
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) Trace collection -->
+    <section id="trace" class="card">
+      <h2>2) Dynamic trace collection</h2>
+      <p class="small">
+        We collect function-level execution traces during test runs and retain only <b>repository-internal</b> functions.
+        Standard library and third-party dependency calls are filtered out, and remaining functions are represented by their
+        fully-qualified paths.
+      </p>
+
+      <div class="imgwrap">
+        <!-- Recommended: export coverage_tool_new.pdf to a png for stable GitHub Pages rendering -->
+        <img src="../assets/coverage_tool_new.png" alt="Architecture of the dynamic coverage collection framework (placeholder path)" />
+        <div class="imgcap">
+          <b>Figure:</b> Architecture of the dynamic coverage collection framework.
+          The system operates in four phases: (1) parallel container startup with volume mounting,
+          (2) in-container test execution with instrumentation, (3) trace output collection, and
+          (4) result aggregation and formatting.
+        </div>
+      </div>
+
+      <details class="small">
+        <summary>What is counted as "covered"?</summary>
+        <p>
+          A code location is considered covered if it appears in the repository-internal function call trace of at least one executed test.
+          Coverage is evaluated at three granularities: <b>file</b>, <b>module</b> (class or top-level function), and <b>function</b>.
+          For search space reduction, we compare the size of the union of test-covered internal functions to the total number of internal
+          functions in the repository for each instance.
+        </p>
+      </details>
+    </section>
+
+    <!-- 3) H1 -->
+    <section id="h1" class="card">
+      <h2>3) H1 — Coverage feasibility</h2>
+      <div class="callout small">
+        <b>Hypothesis H1:</b> Existing tests execute the ground-truth edit locations.
+      </div>
+
+      <p class="small">
+        H1 evaluates whether dynamic execution signals already exist in typical repositories. By intersecting test traces with the
+        ground-truth edit sets, we measure how often tests reach the true edit locations and how much the candidate space can be
+        compressed by trace-induced constraints.
+      </p>
+
+      <h3>Summary statistics (929 instances)</h3>
+      <table>
+        <tr>
+          <th>Metric</th>
+          <th>Mean</th>
+          <th>Median</th>
+          <th>Std</th>
+          <th>Min</th>
+          <th>Max</th>
+        </tr>
+        <tr>
+          <td><b>File-level coverage</b></td>
+          <td>0.9698 (96.98%)</td>
+          <td>1.0000 (100.00%)</td>
+          <td>0.1550</td>
+          <td>0.0000</td>
+          <td>1.0000</td>
+        </tr>
+        <tr>
+          <td><b>Module-level coverage</b></td>
+          <td>0.7804 (78.04%)</td>
+          <td>1.0000 (100.00%)</td>
+          <td>0.3933</td>
+          <td>0.0000</td>
+          <td>1.0000</td>
+        </tr>
+        <tr>
+          <td><b>Function-level coverage</b></td>
+          <td>0.6670 (66.70%)</td>
+          <td>1.0000 (100.00%)</td>
+          <td>0.4178</td>
+          <td>0.0000</td>
+          <td>1.0000</td>
+        </tr>
+        <tr>
+          <td><b>Search space (union coverage / total)</b></td>
+          <td>0.5839 (58.39%)</td>
+          <td>0.6188 (61.88%)</td>
+          <td>0.2268</td>
+          <td>0.1117</td>
+          <td>0.8523</td>
+        </tr>
+      </table>
+
+      <details class="small">
+        <summary>Threshold hit rates</summary>
+        <table>
+          <tr><th>Granularity</th><th>&ge; 75%</th><th>&ge; 90%</th></tr>
+          <tr><td>File-level</td><td>898 / 929 (96.7%)</td><td>886 / 929 (95.4%)</td></tr>
+          <tr><td>Module-level</td><td>700 / 929 (75.3%)</td><td>686 / 929 (73.8%)</td></tr>
+          <tr><td>Function-level</td><td>546 / 929 (58.8%)</td><td>504 / 929 (54.3%)</td></tr>
+        </table>
+      </details>
+
+      <div class="imgwrap">
+        <img src="../assets/h1_coverage_cdf.png" alt="CDF of coverage rates and space reduction (placeholder path)" />
+        <div class="imgcap">
+          <b>Figure (H1):</b> Cumulative distribution of test coverage rates and trace-induced search space reduction.
+          Existing tests cover most ground-truth files and a substantial fraction of ground-truth functions, while compressing
+          the candidate space for downstream localization stages.
+        </div>
+      </div>
+
+      <details class="small">
+        <summary>Raw report (H1)</summary>
+        <pre><code>RQ1: Coverage Statistics Report (Generated: 2026-01-05)
+- Total Instances: 929
+- File-level Mean: 0.9698
+- Module-level Mean: 0.7804
+- Function-level Mean: 0.6670
+- Space Reduction Mean: 0.5839</code></pre>
+      </details>
+    </section>
+
+    <!-- 4) H2 -->
+    <section id="h2" class="card">
+      <h2>4) H2 — Retrievability</h2>
+      <div class="callout small">
+        <b>Hypothesis H2:</b> Tests that cover ground-truth locations are more semantically aligned with the issue than non-covering tests.
+      </div>
+
+      <p class="small">
+        H2 checks whether covering tests are distinguishable from non-covering tests via semantic signals.
+        We compare similarity between the issue description and (i) tests that cover at least one ground-truth location and
+        (ii) baseline tests sampled from the same repository that do not cover ground-truth locations.
+      </p>
+
+      <h3>Instance-level statistics (recommended)</h3>
+      <table>
+        <tr><th>Statistic</th><th>Value</th><th>Notes</th></tr>
+        <tr>
+          <td><b>Win rate</b> (covering &gt; non-covering mean)</td>
+          <td><b>90.9%</b></td>
+          <td>Across valid instances, covering tests show higher similarity than non-covering tests.</td>
+        </tr>
+        <tr>
+          <td><b>Paired t-test</b> (per-instance means)</td>
+          <td><b>$p &lt; 0.001$</b> (t = 38.8015)</td>
+          <td>Significant advantage of covering tests over non-covering tests.</td>
+        </tr>
+        <tr>
+          <td><b>Effect size</b> (Cohen’s d)</td>
+          <td><b>0.5573</b></td>
+          <td>Medium-to-large practical effect.</td>
+        </tr>
+        <tr>
+          <td><b>Correlation</b> (#GT covered vs similarity)</td>
+          <td><b>$\rho = 0.1809$</b>, <b>$p &lt; 0.001$</b></td>
+          <td>Tests covering more ground-truth locations tend to be more semantically aligned with the issue.</td>
+        </tr>
+      </table>
+
+      <div class="imgwrap">
+        <img src="../assets/h2_similarity.png" alt="Semantic similarity of covering vs non-covering tests (placeholder path)" />
+        <div class="imgcap">
+          <b>Figure (H2):</b> Semantic similarity of tests to issue descriptions.
+          Covering tests exhibit higher similarity than non-covering tests, enabling retrieval-based selection.
+        </div>
+      </div>
+
+      <details class="small">
+        <summary>Raw report (H2)</summary>
+        <pre><code>RQ2: Semantic Similarity Statistics Report (Generated: 2026-01-05)
+- Valid instances: 536
+- Win rate: 90.9%
+- Paired t-test p-value: 1.203337e-157
+- Cohen's d: 0.5573
+- Spearman ρ: 0.1809 (p < 0.001)</code></pre>
+      </details>
+
+      <details class="small">
+        <summary>Why instance-level analysis?</summary>
+        <p>
+          Similarity distributions vary across repositories and test suites. Comparing covering vs non-covering tests
+          <b>within each issue instance</b> provides a more stable estimate of semantic distinguishability and reduces
+          cross-project confounding.
+        </p>
+      </details>
+    </section>
+
+    <!-- 5) H3 -->
+    <section id="h3" class="card">
+      <h2>5) H3 — Bridging effect</h2>
+      <div class="callout small">
+        <b>Hypothesis H3:</b> The two-hop pathway Issue $\rightarrow$ Test $\rightarrow$ Location provides stronger semantic connectivity
+        than direct Issue $\rightarrow$ Location matching.
+      </div>
+
+      <p class="small">
+        For each (issue, location) pair where coverage exists, we compare direct similarity
+        $s_{\text{direct}}=\mathrm{sim}(\text{issue}, \text{location})$ against a test-mediated pathway strength:
+      </p>
+
+      <p class="small">
+        $$s_{\text{mediated}} = \max_{t \in \mathcal{T}_{\text{cover}}} \sqrt{\mathrm{sim}(\text{issue}, t)\cdot \mathrm{sim}(t,\text{location})}$$
+      </p>
+
+      <p class="small">
+        This geometric-mean form ensures a strong bridge requires <b>balanced semantic associations</b> across both hops:
+        Issue $\rightarrow$ Test and Test $\rightarrow$ Location.
+      </p>
+
+      <h3>Summary statistics (2416 pairs)</h3>
+      <table>
+        <tr><th>Statistic</th><th>Value</th><th>Notes</th></tr>
+        <tr>
+          <td>Direct pathway mean (std)</td>
+          <td>0.6745 (0.0681)</td>
+          <td>$s_{\text{direct}}$</td>
+        </tr>
+        <tr>
+          <td>Mediated pathway mean (std)</td>
+          <td>0.7271 (0.0576)</td>
+          <td>$s_{\text{mediated}}$</td>
+        </tr>
+        <tr>
+          <td>Win rate (mediated &gt; direct)</td>
+          <td><b>82.4%</b> (1991 / 2416)</td>
+          <td>Bridging effect holds for most pairs.</td>
+        </tr>
+        <tr>
+          <td>Paired t-test</td>
+          <td><b>$p &lt; 0.001$</b> (t = 45.4641)</td>
+          <td>Highly significant difference.</td>
+        </tr>
+        <tr>
+          <td>Wilcoxon signed-rank</td>
+          <td><b>$p &lt; 0.001$</b> (W = 2,633,234)</td>
+          <td>Non-parametric confirmation.</td>
+        </tr>
+        <tr>
+          <td>Effect size (Cohen’s d)</td>
+          <td><b>0.9251</b> (large)</td>
+          <td>Substantial practical improvement.</td>
+        </tr>
+      </table>
+
+      <div class="imgwrap">
+        <img src="../assets/h3_pathway.png" alt="Direct vs mediated pathway scatter (placeholder path)" />
+        <div class="imgcap">
+          <b>Figure (H3):</b> Scatter plot of direct vs mediated pathway strength.
+          Most points lie above the diagonal, indicating $s_{\text{mediated}} &gt; s_{\text{direct}}$ is common.
+        </div>
+      </div>
+
+      <div class="imgwrap" style="margin-top:12px;">
+        <img src="../assets/h3_delta_dist.png" alt="Distribution of mediated-direct difference (placeholder path)" />
+        <div class="imgcap">
+          <b>Figure (H3):</b> Distribution of $\Delta = s_{\text{mediated}} - s_{\text{direct}}$ across pairs.
+          The mass concentrates on $\Delta &gt; 0$, consistent with the bridging effect.
+        </div>
+      </div>
+
+      <details class="small">
+        <summary>Raw report (H3)</summary>
+        <pre><code>RQ3: Tests as Semantic Bridges (Generated: 2026-01-07)
+- Pairs analyzed: 2416
+- direct_mean: 0.6745, mediated_mean: 0.7271
+- Win rate: 82.4%
+- Paired t-test: p < 0.001, Cohen's d: 0.9251</code></pre>
+      </details>
+
+      <details class="small">
+        <summary>Representative examples (format)</summary>
+        <p class="small muted">
+          You can optionally place a small table of representative (issue, location) pairs here (e.g., a few with large positive
+          deltas and a few with negative/near-zero deltas). Keep it short to avoid overwhelming the page.
+        </p>
+        <table>
+          <tr>
+            <th>Instance</th>
+            <th>Location</th>
+            <th>$s_{direct}$</th>
+            <th>$s_{mediated}$</th>
+            <th>Best test</th>
+          </tr>
+          <tr>
+            <td><code><a href="https://github.com/pytest-dev/pytest/issues/11140">pytest-dev__pytest-11143</a></code></td>
+            <td><code>src/_pytest/assertion/rewrite.py::AssertionRewriter.run</code></td>
+            <td>0.7222</td>
+            <td>0.7567</td>
+            <td><code>testing/test_assertrewrite.py::TestAssertionRewrite.test_rewrites_plugin_as_a_package</code></td>
+          </tr>
+          <tr>
+            <td><code><a href="https://github.com/sphinx-doc/sphinx/issues/741">sphinx-doc__sphinx-8548</a></code></td>
+            <td><code>sphinx/ext/autodoc/__init__.py::ClassDocumenter.get_object_members</code></td>
+            <td>0.7573</td>
+            <td>0.8320</td>
+            <td><code>tests/test_ext_autodoc.py::test_autodoc_inherited_members</code></td>
+          </tr>
+        </table>
+      </details>
+    </section>
+
+    <!-- 6) Implications -->
+    <section id="implications" class="card">
+      <h2>6) Implications for IssueExec</h2>
+      <p class="small">
+        The empirical findings directly inform IssueExec’s design choices:
+      </p>
+
+      <div class="kvs small">
+        <div class="kv">
+          <b>H1 → Trace-constrained search space</b>
+          High coverage feasibility implies traces can provide a high-recall candidate subspace with reduced entropy,
+          enabling more efficient localization stages downstream.
+        </div>
+        <div class="kv">
+          <b>H2 → Retrieval-based test selection</b>
+          Since covering tests tend to be more semantically aligned with the issue, semantic retrieval can prioritize
+          requirement-relevant tests. The moderate effect size motivates domain knowledge enhancement to further
+          strengthen Issue → Test alignment.
+        </div>
+        <div class="kv">
+          <b>H3 → Two-hop localization strategy</b>
+          Tests act as semantic relays that link requirement-level language to code locations more effectively than direct
+          matching, validating the Issue → Tests → Code decomposition.
+        </div>
+        <div class="kv">
+          <b>Trace noise → Hierarchical trace analysis</b>
+          The gap between covering and non-covering code within traces motivates trace-guided pruning and hierarchical
+          analysis to filter infrastructure noise and retain requirement-central functions.
+        </div>
+      </div>
+    </section>
+
+    <!-- 7) Notes -->
+    <section id="notes" class="card">
+      <h2>7) Notes & limitations</h2>
+      <ul class="small">
+        <li>
+          Coverage feasibility varies by granularity: file-level coverage is typically higher than function-level coverage, which
+          is expected because a single file may contain multiple functions and only some are executed by existing tests.
+        </li>
+        <li>
+          Semantic retrievability is evaluated with within-instance comparisons to mitigate cross-project distribution shifts in test suites.
+        </li>
+        <li>
+          The bridging effect is evaluated only on pairs where coverage exists (i.e., at least one covering test is available).
+        </li>
+      </ul>
+
+      <details class="small">
+        <summary>Where to see concrete end-to-end examples</summary>
+        <p class="small">
+          See <a href="../case-studies/index.html">Case Studies</a> for illustrative good and bad cases, with intermediate artifacts
+          (retrieved tests, trace-guided candidates, and final ranked locations).
+        </p>
+      </details>
+    </section>
+
+    <footer>
+      <div>
+        <b>Note on anonymity:</b> Ensure embedded assets and referenced materials do not reveal author identity. Avoid analytics and trackers.
+      </div>
+      <div style="margin-top:8px;">
+        © IssueExec Artifact (anonymous). This page summarizes empirical validation for the test-driven issue localization premise.
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

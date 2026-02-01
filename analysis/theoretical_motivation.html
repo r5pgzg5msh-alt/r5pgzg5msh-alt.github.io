@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IssueExec Artifact — Theoretical Motivation</title>
+
+  <!-- Minimal, GitHub-Pages-friendly styling (no external assets required) -->
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #111824;
+      --text: #e8eef7;
+      --muted: #a9b6c7;
+      --link: #7dd3fc;
+      --border: rgba(255,255,255,0.12);
+      --code: #0f1623;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+    }
+    /* @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --panel: #f7fafc;
+        --text: #0b1220;
+        --muted: #4b5563;
+        --link: #0369a1;
+        --border: rgba(0,0,0,0.12);
+        --code: #eef2ff;
+      }
+    } */
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      line-height: 1.55;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+    header {
+      padding: 10px 0 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 18px;
+    }
+    .crumbs { font-size: 14px; color: var(--muted); }
+    .crumbs a { color: var(--muted); }
+    h1 { font-size: 30px; margin: 8px 0 10px; }
+    .subtitle { color: var(--muted); margin: 0 0 12px; }
+    .pillrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin: 18px 0 14px;
+    }
+    @media (min-width: 860px) {
+      .grid { grid-template-columns: 1.2fr 0.8fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 14px;
+    }
+    .card h2 { font-size: 18px; margin: 0 0 8px; }
+    .card h3 { font-size: 16px; margin: 14px 0 6px; }
+    .muted { color: var(--muted); }
+    .callout {
+      border-left: 4px solid rgba(125,211,252,0.6);
+      padding: 10px 12px;
+      background: rgba(125,211,252,0.06);
+      border-radius: 10px;
+    }
+    .small { font-size: 14px; }
+    .hr { height: 1px; background: var(--border); margin: 18px 0; }
+    .kvs { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 720px) { .kvs { grid-template-columns: 1fr 1fr; } }
+    .kv {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.02);
+    }
+    .kv b { display: block; margin-bottom: 4px; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    pre {
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      overflow: auto;
+      margin: 10px 0;
+    }
+    .badge { font-weight: 700; }
+    .badge.ok { color: var(--ok); }
+    .badge.warn { color: var(--warn); }
+    .badge.bad { color: var(--bad); }
+    details {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.02);
+      margin: 10px 0;
+    }
+    summary { cursor: pointer; font-weight: 650; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 10px 0;
+      background: rgba(255,255,255,0.02);
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th { background: rgba(255,255,255,0.04); }
+    tr:last-child td { border-bottom: none; }
+    .imgwrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(255,255,255,0.02);
+    }
+    .imgwrap img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    .imgcap { font-size: 13px; color: var(--muted); margin-top: 8px; }
+    footer {
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .toc a { display: inline-block; margin: 2px 0; }
+  </style>
+
+  <!-- MathJax (works on GitHub Pages) -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="crumbs">
+        <a href="../index.html">Home</a> / <a href="./index.html">Analysis</a> / Theoretical Motivation
+      </div>
+      <h1>Theoretical Motivation</h1>
+      <p class="subtitle">
+        Preliminary theoretical analysis + illustrations for why <b>test-driven localization</b>
+        (issue $\rightarrow$ tests $\rightarrow$ trace-constrained code) reduces localization uncertainty vs direct issue-to-code matching.
+      </p>
+      <p><a href="../index.html">← Back to Homepage</a></p>
+      <!-- <div class="pillrow">
+        <span class="pill">Stage-wise uncertainty proxy</span>
+        <span class="pill">Space compression via traces</span>
+        <span class="pill">Explicit failure modes</span>
+        <span class="pill">Design implications for IssueExec</span>
+      </div> -->
+    </header>
+
+    <!-- Top: one-screen takeaway -->
+    <section class="grid">
+      <div class="card">
+        <h2>One-screen takeaway</h2>
+        <div class="callout small">
+          <b>Claim (paradigm-level, method-agnostic):</b>
+          Under the same return budget $k_{\text{ret}}$, routing localization through tests and trace constraints tends to
+          reduce the ambiguity of identifying true edit locations—i.e., it yields a positive uncertainty reduction $\Delta H > 0$ on average.
+        </div>
+
+        <h3>Why this can help</h3>
+        <ul class="small">
+          <li><b>Space compression:</b> retrieved tests induce a trace-covered subspace $L_{\text{cov}}$ with $N_{\text{cov}} \ll N$,
+              shrinking the combinatorial search space.</li>
+          <li><b>Failure modes become explicit:</b> (i) weak test selection (few effective tests), (ii) coverage gap ($g_{\text{excl}} > 0$)
+              where some ground-truth edits lie outside trace coverage.</li>
+          <li><b>Design guidance:</b> maximize $\Delta H$ by (a) improving test retrieval precision, (b) refining trace analysis to shrink $N_{\text{cov}}$
+              while preserving true edits inside the retained subspace.</li>
+        </ul>
+
+        <div class="hr"></div>
+
+        <h3>Where this fits in the artifact</h3>
+        <ul class="small">
+          <li>Illustrative success/failure stories: <a href="../case-studies/index.html">Case Studies</a>.</li>
+          <li>This page focuses on: <b>insight + interpretable examples</b>.</li>
+        </ul>
+      </div>
+
+      <div class="card toc">
+        <h2>Quick links</h2>
+        <div class="small">
+          <a href="#setup">1) Setup & notation</a><br/>
+          <a href="#proxy">2) Entropy proxy</a><br/>
+          <a href="#direct">3) Direct uncertainty</a><br/>
+          <a href="#indirect">4) Test-driven uncertainty</a><br/>
+          <a href="#venn">5) Partition diagram</a><br/>
+          <a href="#gain">6) Entropy gain & design implications</a><br/>
+          <a href="#minicases">7) Case studies</a><br/>
+          <a href="#limitations">8) Scope & limitations</a><br/>
+        </div>
+
+        <!-- <div class="hr"></div>
+
+        <h2>Quick links</h2>
+        <ul class="small">
+          <li><a href="../prompts/index.html">Prompts</a></li>
+          <li><a href="../case-studies/index.html">Case studies for IssueExec</a></li>
+        </ul>
+      </div> -->
+
+    </section>
+
+    <!-- 1) Setup -->
+    <section id="setup" class="card">
+      <h2>1) Setup & notation</h2>
+      <p class="small">
+        Given an issue description $d$ and repository $R$, let $L$ be the universe of candidate locations
+        (e.g., all functions/methods) with $N = |L|$. Let $\mathcal{G}\subseteq L$ be the ground-truth edit set.
+        Any localization system returns a ranked list of locations under a budget $k_{\text{ret}}$; the returned set is
+        $L_{\text{ret}}$ with $|L_{\text{ret}}|=k_{\text{ret}}$.
+      </p>
+
+      <div class="kvs small">
+        <div class="kv">
+          <b>Issue and candidate space</b>
+          $d$: issue description<br/>
+          $L$: all candidate locations<br/>
+          $N=|L|$: size of global space<br/>
+          $\mathcal{G}$: ground-truth edit set
+        </div>
+        <div class="kv">
+          <b>Budgets</b>
+          $k_{\text{ret}}$: number of locations returned<br/>
+          $k_{\text{test}}$: number of retrieved tests
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <p class="small">
+        In the <b>test-driven</b> pipeline, we retrieve a fixed-size set of tests $\hat{\mathcal{T}}_d$,
+        $|\hat{\mathcal{T}}_d|=k_{\text{test}}$. Each test $t$ has a dynamic coverage set $\text{Cov}(t) \subseteq L$.
+        The trace-constrained subspace is their union:
+      </p>
+
+      <p class="small">
+        $$L_{\text{cov}} = \bigcup_{t\in \hat{\mathcal{T}}_d}\text{Cov}(t), \qquad N_{\text{cov}} = |L_{\text{cov}}|.$$
+      </p>
+    </section>
+
+    <!-- 2) Proxy -->
+    <section id="proxy" class="card">
+      <h2>2) Entropy proxy (uncertainty as combinatorial ambiguity)</h2>
+      <p class="small">
+        We approximate uncertainty with <b>Hartley entropy</b>:
+        $$H(\mathcal{C}) \approx \log_2|\mathcal{C}|,$$
+        capturing the ambiguity of selecting correct edits from a candidate set. We do <b>not</b> estimate the intractable
+        distribution $P(L\mid d)$; instead, we quantify <b>relative uncertainty reduction</b> induced by hierarchical retrieval and trace constraints.
+      </p>
+
+    </section>
+
+    <!-- 3) Direct -->
+    <section id="direct" class="card">
+      <h2>3) Direct retrieval uncertainty</h2>
+      <p class="small">
+        A direct method ranks the entire space $L$ and returns $L_{\text{ret}}$.
+        Let $g_{\text{ret}} = |\mathcal{G}\cap L_{\text{ret}}|$ denote how many ground-truth edits fall inside the returned set.
+        We use a partition-based proxy that explicitly accounts for whether true edits fall inside or outside $L_{\text{ret}}$:
+      </p>
+
+      <p class="small">
+        $$
+        \begin{aligned}
+        H_{\text{direct}} ={}&
+        1[g_{\text{ret}} > 0]\cdot \Big(-\log_2 \frac{g_{\text{ret}}}{|L_{\text{ret}}|}\Big) +
+        1[|\mathcal{G}|-g_{\text{ret}} > 0]\cdot
+        \Big(-\log_2 \frac{|\mathcal{G}|-g_{\text{ret}}}{N-|L_{\text{ret}}|}\Big).
+        \end{aligned}
+        $$
+      </p>
+
+      <div class="callout small">
+        <b>Intuition:</b>
+        The first term measures ambiguity among returned candidates that include (some) true edits.
+        The second term captures residual uncertainty when some true edits are not retrieved.
+      </div>
+
+    </section>
+
+    <!-- 4) Indirect -->
+    <section id="indirect" class="card">
+      <h2>4) Test-driven (indirect) uncertainty</h2>
+      <p class="small">
+        Test-driven localization decomposes the search into two stages:
+        (i) retrieving requirement-relevant tests, and (ii) localizing within a trace-constrained subspace.
+        We model uncertainty as the sum of stage-wise entropies, making realistic failure modes explicit.
+      </p>
+
+      <h3>Stage 1 — Test selection entropy</h3>
+      <p class="small">
+        A retrieved test is <i>effective</i> if it covers at least one ground-truth location:
+        $\text{Cov}(t)\cap \mathcal{G}\neq\emptyset$. Let $n$ be the number of effective tests in $\hat{\mathcal{T}}_d$.
+      </p>
+
+      <p class="small">
+        $$H_{\text{stage1}} = 1[n>0]\cdot \Big(-\log_2 \frac{n}{k_{\text{test}}}\Big).$$
+      </p>
+
+      <div class="callout small">
+        <b>Interpretation:</b>
+        when $n$ is large, stage 1 has low uncertainty; when $n=0$, the pipeline likely fails because traces cannot include true edits.
+      </div>
+
+      <h3>Stage 2 — Trace-constrained localization entropy</h3>
+      <p class="small">
+        We partition the global space into three disjoint regions induced by the trace subspace and the returned top-$k_{\text{ret}}$ locations.
+        Critically, in the test-driven pipeline, $L_{\text{ret}}\subseteq L_{\text{cov}}$.
+      </p>
+
+      <p class="small">
+        $$S_{\text{ret}} = L_{\text{ret}}, \quad S_{\text{cov}} = L_{\text{cov}} \setminus L_{\text{ret}}, \quad S_{\text{excl}} = L\setminus L_{\text{cov}}.$$
+      </p>
+
+      <p class="small">
+        Let $N_i=|S_i|$ and $g_i=|\mathcal{G}\cap S_i|$ for $i\in\{\text{ret},\text{cov},\text{excl}\}$. Define:
+      </p>
+
+      <p class="small">
+        $$H_{\text{stage2}} =
+        \sum_{i\in\{\text{ret},\text{cov},\text{excl}\},\, g_i>0}
+        \Big(-\log_2 \frac{g_i}{N_i}\Big).$$
+      </p>
+
+      <div class="callout small">
+        <b>Two key phenomena:</b>
+        <ul>
+          <li><b>Space compression:</b> if $N_{\text{cov}}\ll N$, uncertainty shrinks because the search space is smaller.</li>
+          <li><b>Coverage penalty:</b> if $g_{\text{excl}}>0$ (some true edits outside trace coverage), the penalty term can dominate.</li>
+        </ul>
+      </div>
+
+      <p class="small">
+        The hierarchical uncertainty is:
+        $$H_{\text{indirect}} = H_{\text{stage1}} + H_{\text{stage2}}.$$
+      </p>
+    </section>
+
+    <!-- 5) Venn -->
+    <section id="venn" class="card">
+      <h2>5) Partition diagram (Venn)</h2>
+
+      <div class="imgwrap">
+        <!-- Replace with your exported asset. Recommended: assets/venn.png or assets/venn.svg -->
+        <img src="../assets/venn.png" alt="Venn diagram for hierarchical search space partition (placeholder path)" />
+        <div class="imgcap">
+          <b>Figure:</b> Venn diagram illustrating hierarchical search space partition.
+        </div>
+      </div>
+
+
+    </section>
+
+    <!-- 6) Gain -->
+    <section id="gain" class="card">
+      <h2>6) Entropy gain & design implications</h2>
+      <p class="small">
+        For each issue, define empirical uncertainty reduction:
+        $$\Delta H = H_{\text{direct}} - H_{\text{indirect}}.$$
+        A positive $\Delta H$ indicates that introducing tests and traces reduces localization ambiguity compared to direct matching
+        <b>under the same return budget</b> $k_{\text{ret}}$.
+      </p>
+
+      <h3>Design implications (how this motivates IssueExec)</h3>
+      <div class="kvs small">
+        <div class="kv">
+          <b>Implication A — Improve test retrieval precision</b>
+          Goal: increase $n/k_{\text{test}}$ and reduce external failure ($g_{\text{excl}}>0$).<br/>
+          <span class="muted">Maps to:</span>
+          <ul>
+            <li><b>Domain knowledge enhancement</b> (commit messages + co-changed entities) to bridge terminology gaps.</li>
+            <li><b>Two-phase retrieval</b>: lexical filtering (BM25) for recall, LLM selection for precision.</li>
+          </ul>
+          <span class="muted">Related paper sections:</span> 4.2, 4.3
+        </div>
+        <div class="kv">
+          <b>Implication B — Refine trace analysis to compress the subspace</b>
+          Goal: shrink $N_{\text{cov}}$ while preserving true edits inside the considered subspace.<br/>
+          <span class="muted">Maps to:</span>
+          <ul>
+            <li><b>Trace-guided localization</b>: use call hierarchy + pruning; identify sparse suspicious set.</li>
+            <li><b>Refinement & reranking</b>: expand structurally related candidates + code-aware rerank to improve top-k precision.</li>
+          </ul>
+          <span class="muted">Related paper sections:</span> 4.4, 4.5
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 7) Mini cases -->
+    <section id="minicases" class="card">
+      <h2>7) Case studies</h2>
+      <p class="small">
+        This page prioritizes <b>case-driven interpretability</b>. We provide representative mini cases with intermediate quantities
+        (set sizes and overlaps) to illustrate how $\Delta H$ is computed and why it becomes positive/negative.
+        Full narratives and raw artifacts are linked from each case.
+      </p>
+
+      <!-- Mini Case 1 -->
+      <!-- Mini Case A (GOOD CASE) -->
+      <details open class="small" id="mini-case-a">
+        <summary>
+          Case A — Space compression success
+          <!-- <span class="badge ok">[GOOD CASE]</span> -->
+        </summary>
+
+        <p>
+          <b>Instance:</b> <code><a href="https://github.com/sympy/sympy/issues/19747">sympy-Issues-19747</a>   </code>
+          · <b>Budgets:</b> <code>k_test=5</code>, <code>k_ret=10</code>, <code>gt_threshold=1.0</code>
+          · <b>Gain:</b> <b>ΔH = 15.46 bits</b>
+          · <b>External failure:</b> <span class="badge ok">No</span>
+        </p>
+
+        <div class="callout">
+          <b>Why it’s a good case:</b> strong trace-space compression with full GT coverage.
+          Here <code>N=28222</code> shrinks to <code>N_cov=626</code> (~<code>45.1×</code> smaller),
+          and all GT edits are covered (<code>g_ext=0</code>), so indirect uncertainty is tiny.
+        </div>
+
+        <table>
+          <tr><th>Item</th><th>Value</th><th>Notes</th></tr>
+          <tr>
+            <td>Full case page</td>
+            <td><a href="case-studies-thero/case_sympy.html">case_sympy.html</a></td>
+            <td>Inspectable artifacts (tests, top-k, GT) + computed terms.</td>
+          </tr>
+          <tr><td>Global space</td><td><code>N = 28222</code></td><td>All candidate code locations.</td></tr>
+          <tr><td>Trace subspace</td><td><code>N_cov = 626</code></td><td>Union coverage of selected tests.</td></tr>
+          <tr><td>GT size</td><td><code>|G| = 2</code></td><td>Two GT edit locations.</td></tr>
+          <tr><td>Direct hits</td><td><code>g_ret_direct = 1</code></td><td>Direct top-10 includes 1 GT.</td></tr>
+          <tr><td>Indirect hits</td><td><code>g_ret_indirect = 2</code></td><td>Indirect top-10 includes both GT.</td></tr>
+          <tr><td>Effective tests</td><td><code>n_effective = 4 / 5</code></td><td>Stage1 is small.</td></tr>
+          <tr><td>Coverage gap</td><td><code>g_ext = 0</code></td><td>No GT outside trace coverage.</td></tr>
+        </table>
+
+        <details class="small">
+          <summary>Computed entropy terms (from this instance)</summary>
+          <pre><code>H_direct   = 18.105949419261542
+      H_stage1   = 0.3219280948873623
+      H_stage2   = 2.321928094887362
+      H_indirect = 2.6438561897747244
+      ΔH         = 15.462093229486818</code></pre>
+        </details>
+      </details>
+
+
+    <!-- Mini Case 2 -->
+    <!-- Mini Case B (BAD CASE) -->
+    <details class="small" id="mini-case-b">
+      <summary>
+        Case B — External failure (coverage gap)
+        <!-- <span class="badge bad">[BAD CASE]</span> -->
+      </summary>
+
+      <p>
+        <b>Instance:</b> <code><a href="https://github.com/pydata/xarray/issues/3992">xarray-Issues-3992</a>   </code>
+        · <b>Budgets:</b> <code>k_test=5</code>, <code>k_ret=10</code>, <code>gt_threshold=1.0</code>
+        · <b>Gain:</b> <b>ΔH = -1.55 bits</b>
+        · <b>External failure:</b> <span class="badge bad">Yes</span>
+      </p>
+
+      <div class="callout">
+        <b>Why it’s a bad case:</b> coverage gap + weak Stage1 dominates.
+        Even though there is compression (<code>N=2011</code> → <code>N_cov=271</code>, ~<code>7.4×</code> smaller),
+        two GT edits are outside trace coverage (<code>g_ext=2</code>), and only 1/5 retrieved tests is effective,
+        so indirect uncertainty becomes larger than direct.
+      </div>
+
+      <table>
+        <tr><th>Item</th><th>Value</th><th>Notes</th></tr>
+
+        <tr>
+          <td>Full case page</td>
+          <td><a href="case-studies-thero/case_pydata__xarray.html">case_pydata__xarray.html</a></td>
+          <td>Inspectable artifacts (tests, top-k, GT) + computed terms.</td>
+        </tr>
+
+        <tr>
+          <td>Global space</td>
+          <td><code>N = 2011</code></td>
+          <td>All candidate code locations.</td>
+        </tr>
+
+        <tr>
+          <td>Trace subspace</td>
+          <td><code>N_cov = 271</code></td>
+          <td>Union coverage of selected tests (L_sub_size).</td>
+        </tr>
+
+        <tr>
+          <td>GT size</td>
+          <td><code>|G| = 4</code></td>
+          <td>Four GT edit locations.</td>
+        </tr>
+
+        <tr>
+          <td>Direct hits</td>
+          <td><code>g_ret_direct = 1</code></td>
+          <td>Direct top-10 includes 1 GT.</td>
+        </tr>
+
+        <tr>
+          <td>Indirect hits</td>
+          <td><code>g_ret_indirect = 2</code></td>
+          <td>Indirect (trace-constrained) top-10 includes 2 GT.</td>
+        </tr>
+
+        <tr>
+          <td>Effective tests</td>
+          <td><code>n_effective = 1 / 5</code></td>
+          <td>Stage1 is large: <code>H_stage1 = -log2(1/5) = 2.3219</code>.</td>
+        </tr>
+
+        <tr>
+          <td>Coverage gap</td>
+          <td><code>g_ext = 2</code></td>
+          <td>Two GT locations fall outside trace coverage (external penalty).</td>
+        </tr>
+
+        <tr>
+          <td>Outcome</td>
+          <td><b>ΔH = -1.553</b> (negative)</td>
+          <td><code>H_direct=12.703</code>, <code>H_indirect=14.257</code>.</td>
+        </tr>
+      </table>
+
+      <details class="small">
+        <summary>Computed entropy terms (from this instance)</summary>
+        <pre><code>H_direct   = 12.703471046071947
+    H_stage1   = 2.321928094887362
+    H_stage2   = 11.934796592178403
+    H_indirect = 14.256724687065764
+    ΔH         = -1.5532536409938178</code></pre>
+      </details>
+
+      <details class="small">
+        <summary>Evidence snippet (coverage summary)</summary>
+        <pre><code>- Selected tests (k_test=5):
+      xarray/tests/test_dataset.py::test_differentiate
+      xarray/tests/test_dataset.py::test_integrate
+      xarray/tests/test_dataset.py::TestDataset.test_expand_dims_mixed_int_and_coords
+      xarray/tests/test_concat.py::test_concat_merge_single_non_dim_coord
+      xarray/tests/test_dataset.py::TestDataset.test_dataset_diff_n2
+
+    - Union coverage size:
+      N_cov = 271  (L_sub_size)
+
+    - GT locations (|G|=4):
+      xarray/core/dataarray.py::DataArray.integrate
+      xarray/core/dataset.py::Dataset.integrate
+      xarray/core/dataarray.py::DataArray.map_blocks
+      xarray/core/dataarray.py::DataArray.unify_chunks
+
+    - Uncovered GT (g_ext=2):
+      xarray/core/dataarray.py::DataArray.map_blocks
+      xarray/core/dataarray.py::DataArray.unify_chunks</code></pre>
+      </details>
+    </details>
+
+
+    <!-- 8) Limitations -->
+    <section id="limitations" class="card">
+      <h2>8) Scope & limitations</h2>
+      <ul class="small">
+        <li>This analysis is a <b>preliminary</b> motivation for the test-driven paradigm; it does not claim universally positive gains for every project.</li>
+        <li>The entropy proxy is <b>not</b> a calibrated posterior; it is an interpretable measure of combinatorial ambiguity.</li>
+        <li>External failure ($g_{\text{excl}}>0$) is expected when tests do not cover the ground-truth edits; this motivates refinement and broader candidate expansion.</li>
+        <li>Trace collection has overhead; IssueExec treats trace collection primarily as offline preprocessing and uses pruning/compression to fit context.</li>
+      </ul>
+
+      <details class="small">
+        <summary>Link to bad cases illustrating limitations</summary>
+        <ul>
+          <li>Coverage gap example: <a href="../case-studies/django__django-10924.html">Bad Case 1</a> </li>
+          <li>Trace noise / infra dominance example: <a href="../case-studies/sphinx-doc__sphinx-8474.html">Bad Case 2</a> (placeholder)</li>
+        </ul>
+      </details>
+    </section>
+
+
+
+    <footer>
+      <div>
+        <b>Note on anonymity:</b> Ensure links and embedded artifacts do not reveal author identity. Avoid external analytics and third-party trackers.
+      </div>
+      <div style="margin-top:8px;">
+        © IssueExec Artifact (anonymous). This page is intended for reviewing theoretical motivation and its connection to the system design.
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
