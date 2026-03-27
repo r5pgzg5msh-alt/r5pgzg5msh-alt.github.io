@@ -224,14 +224,13 @@ lib/matplotlib/tests/test_pickle.py::test_complete</code></pre>
     <section class="card">
       <h2>6) Baseline (SWE-agent) — Failure Summary</h2>
       <ul>
-        <li><strong>Early lock-in:</strong> assumes “MacOSX backend scaling bug” because <code>__setstate__</code> touches backend manager creation.</li>
-        <li><strong>Single-direction debugging:</strong> instruments <code>backend_macosx.py</code> (<code>resize</code>, logs, arm64 branches) without checking the serialization closed loop.</li>
-        <li><strong>Workaround drift:</strong> introduces a new <code>rcParam</code> (<code>macosx.dpi_scaling</code>) + config registration + docs (mitigation rather than root-cause fix).</li>
-        <li><strong>Missed root cause:</strong> does not investigate whether <code>__getstate__</code> omits or misrepresents DPI/device scaling related state.</li>
+        <li><strong>Reproduction failed:</strong> first writes <code>reproduce_bug.py</code>, but the bug cannot be reproduced after execution (<code>dpi</code> does not double as described in the issue), likely due to environment mismatch since the issue is reported on a Mac laptop.</li>
+        <li><strong>Backend-first detour:</strong> then inspects <code>backend_macosx.py</code>, but finds no code directly manipulating <code>dpi</code>.</li>
+        <li><strong>Repeated unsuccessful attempts:</strong> rewrites the reproduction script, still fails; then directly checks <code>rcsetup.py</code> for DPI-related parameter definitions, but again finds nothing useful.</li>
+        <li><strong>No successful fix:</strong> after repeated failed attempts, it deletes resize-related lines in <code>backend_macosx.py</code>, but the issue is still not resolved.</li>
       </ul>
       <p class="note">
-        Key contrast: IssueExec uses existing tests and traces to constrain candidates to must-pass serialization methods,
-        preventing speculative backend fixation.
+        In short, SWE-agent never establishes the issue → test → code link, so it drifts between failed reproduction and speculative file inspection without reaching the serialization root cause.
       </p>
     </section>
 
